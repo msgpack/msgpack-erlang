@@ -364,7 +364,7 @@ map_test()->
     ?assertEqual(Map, Map2),
     ok.
 
-unknown_test_freezed_test()->
+unknown_test_freezed_test_dont_do_this()->
     Port = open_port({spawn, "ruby testcase_generator.rb"}, [binary, eof]),
     Tests = [0, 1, 2, 123, 512, 1230, 678908,
 	     -1, -23, -512, -1230, -567898,
