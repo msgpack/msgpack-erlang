@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2009-2010 UENISHI Kota
+%% Copyright (C) 2009-2011 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
@@ -288,24 +288,7 @@ unpack_(Bin) ->
 % unit tests
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 -ifdef(TEST).
-
 -include_lib("eunit/include/eunit.hrl").
-
-compare_all([], [])-> ok;
-compare_all([],  R)-> {toomuchrhs, R};
-compare_all(L,  [])-> {toomuchlhs, L};
-compare_all([LH|LTL], [RH|RTL]) ->
-    ?assertEqual(LH, RH),
-    compare_all(LTL, RTL).
-
-port_receive(Port) ->
-    port_receive(Port, <<>>).
-port_receive(Port, Acc) ->
-    receive
-        {Port, {data, Data}} -> port_receive(Port, <<Acc/binary, Data/binary>>);
-        {Port, eof} -> Acc
-    after 1000 -> Acc
-    end.
 
 test_([]) -> 0;
 test_([Term|Rest])->
@@ -331,16 +314,6 @@ basic_test()->
     Passed = test_(Tests),
     Passed = length(Tests).
 
-port_test()->
-    Tests = test_data(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests]))),
-
-%    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
-%    true = port_command(Port, msgpack:pack(Tests)),
-%    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
-%    port_close(Port).
-    ok.
-
 test_p(Len,Term,OrigBin,Len) ->
     {Term, <<>>}=msgpack:unpack(OrigBin);
 test_p(I,_,OrigBin,Len) when I < Len->
@@ -363,22 +336,6 @@ map_test()->
     {Map2, <<>>} = msgpack:unpack(msgpack:pack(Map)),
     ?assertEqual(Map, Map2),
     ok.
-
-unknown_test_freezed_test_dont_do_this()->
-    Port = open_port({spawn, "ruby testcase_generator.rb"}, [binary, eof]),
-    Tests = [0, 1, 2, 123, 512, 1230, 678908,
-	     -1, -23, -512, -1230, -567898,
-	     <<"hogehoge">>, <<"243546rf7g68h798j">>,
-	     123.123,
-	     -234.4355, 1.0e-34, 1.0e64,
-	     [23, 234, 0.23],
-	     [0,42,<<"sum">>, [1,2]], [1,42, nil, [3]],
-	     {[{1,2},{<<"hoge">>,nil}]}, % map
-	     -234, -50000,
-	     42
-	    ],
-    ?assertEqual(ok, compare_all(Tests, msgpack:unpack_all(port_receive(Port)))),
-    port_close(Port).
 
 other_test()->
     ?assertEqual({error,incomplete},msgpack:unpack(<<>>)).

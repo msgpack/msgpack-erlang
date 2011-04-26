@@ -19,7 +19,7 @@
 %%% File    : mp_server.erl
 %%% Author  : UENISHI Kota <kuenishi@gmail.com>
 %%% Description : MessagePack server
-%%% 
+%%%  @brief client-side interface
 %%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
 -module(msgpack_rpc).

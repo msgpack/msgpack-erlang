@@ -57,8 +57,8 @@ stop(_State) ->
 
 -include_lib("eunit/include/eunit.hrl").
 
-mp_sample_test()->
-    ok=mp_sample:start(),
-    ok=mp_sample:stop().
+%% mp_sample_test()->
+%%     ok=mp_sample:start(),
+%%     ok=mp_sample:stop().
 
 -endif.

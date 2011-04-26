@@ -8,7 +8,7 @@
 -module(sample_srv).
 -author('kuenishi@gmail.com').
 
--behaviour(mp_session).
+-behaviour(gen_msgpack_rpc_srv).
 
 %% rpc methods
 -export([hello/0, add/2]).

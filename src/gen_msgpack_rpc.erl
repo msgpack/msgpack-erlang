@@ -42,7 +42,7 @@
 %%% @end
 %%% Created : 26 Aug 2010 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(mp_client).
+-module(gen_msgpack_rpc).
 
 -behaviour(gen_server).
 -include("mp_rpc.hrl").
@@ -264,39 +264,5 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 -ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-my_first_case(_Config) ->
-    {ok, _Pid}=mp_client:connect(localhost,65500),
-    {ok, Result}=mp_client:call(42, hello, []),
-    true=is_list(Result),
-    ok=mp_client:close().
-
-my_second_case(_)->
-    {ok, _}=mp_client:connect({local, hoge}, localhost,65500),
-    {ok, Result}=mp_client:call(hoge,42, hello, []),
-    true=is_list(Result),
-    {ok, 7}=mp_client:call(hoge,43, add, [3,4]),
-    ok=mp_client:close(hoge).
-
-case_add(_Config)->
-    Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
-	  {-2000, 2000}, {2000, -2000}, {234, -234}],
-    {ok, _Pid}=mp_client:connect({local,add}, localhost,65500),
-    {ok, _Result}=mp_client:call(add, 42, hello, []),
-    lists:map( fun({L,R})-> S=L+R, {ok,S}=mp_client:call(add, (L+42), add, [L,R])  end, Pairs ),
-    {error, {<<"no such func">>,nil}}=mp_client:call(add, 890, no_such_func, []),
-    mp_client:close(add).
-
-my_test()->
-    ok=sample_app:start(),
-    ok=my_first_case(nil),
-    ok=my_second_case(nil),
-    ok=case_add(nil),
-    ok=sample_app:stop().
-    
-%%     {ok,Pid}=mp_client:connect(localhost,65500),
-%%     {ok,_Reply}=mp_client:call(Pid, hoge, []),
-%%     mp_client:close().
-
+% tests moved to test/gen_msgpack_rpc_test.erl
 -endif.

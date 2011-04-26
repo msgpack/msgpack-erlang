@@ -16,13 +16,14 @@
 %%    limitations under the License.
 
 %%%-------------------------------------------------------------------
-%%% File    : mp_server_srv.erl
-%%% Author  : UENISHI Kota <kuenishi@gmail.com>
-%%% Description : 
-%%% @private
-%%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
+%%% @author UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
+%%% @copyright (C) 2011, UENISHI Kota
+%%% @doc
+%%%
+%%% @end
+%%% Created : 26 Apr 2011 by UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
 %%%-------------------------------------------------------------------
--module(mp_server_srv).
+-module(msgpack_rpc_listener).
 
 -behaviour(gen_server).
 
@@ -33,31 +34,37 @@
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
 	 terminate/2, code_change/3]).
 
--define(SERVER, ?MODULE).
+-define(SERVER, ?MODULE). 
 -record(state, {listener, acceptor, module}).
 
-%%====================================================================
-%% API
-%%====================================================================
+%%%===================================================================
+%%% API
+%%%===================================================================
+
 %%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
-%% Description: Starts the server
+%% @doc
+%% Starts the server
+%%
+%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @end
 %%--------------------------------------------------------------------
 start_link(Mod, Options) ->
-    Name = proplists:get_value(name, Options, Mod),
-%    gen_server:start_link({local, Name}, ?MODULE, [Mod, Options], [{debug,[trace,log,statistics]}]).
-    gen_server:start_link({local, Name}, ?MODULE, [Mod,Options], []).
+    gen_server:start_link({local, ?SERVER}, ?MODULE, [Mod, Options], []).
 
-%%====================================================================
-%% gen_server callbacks
-%%====================================================================
+%%%===================================================================
+%%% gen_server callbacks
+%%%===================================================================
 
 %%--------------------------------------------------------------------
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
+%% @private
+%% @doc
+%% Initializes the server
+%%
+%% @spec init(Args) -> {ok, State} |
+%%                     {ok, State, Timeout} |
+%%                     ignore |
+%%                     {stop, Reason}
+%% @end
 %%--------------------------------------------------------------------
 init([Mod, Options]) ->
     Addr = proplists:get_value(addr, Options, {0,0,0,0}),
@@ -89,31 +96,44 @@ init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
     end.
 
 %%--------------------------------------------------------------------
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
+%% @private
+%% @doc
+%% Handling call messages
+%%
+%% @spec handle_call(Request, From, State) ->
+%%                                   {reply, Reply, State} |
+%%                                   {reply, Reply, State, Timeout} |
+%%                                   {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, Reply, State} |
+%%                                   {stop, Reason, State}
+%% @end
 %%--------------------------------------------------------------------
 handle_call(Request, _From, State) ->
     {stop, {unknown_call, Request}, State}.
 
 %%--------------------------------------------------------------------
-%% Function: handle_cast(Msg, State) -> {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, State}
-%% Description: Handling cast messages
+%% @private
+%% @doc
+%% Handling cast messages
+%%
+%% @spec handle_cast(Msg, State) -> {noreply, State} |
+%%                                  {noreply, State, Timeout} |
+%%                                  {stop, Reason, State}
+%% @end
 %%--------------------------------------------------------------------
 handle_cast(_Msg, State) ->
     {noreply, State}.
 
 %%--------------------------------------------------------------------
-%% Function: handle_info(Info, State) -> {noreply, State} |
-%%                                       {noreply, State, Timeout} |
-%%                                       {stop, Reason, State}
-%% Description: Handling all non call/cast messages
+%% @private
+%% @doc
+%% Handling all non call/cast messages
+%%
+%% @spec handle_info(Info, State) -> {noreply, State} |
+%%                                   {noreply, State, Timeout} |
+%%                                   {stop, Reason, State}
+%% @end
 %%--------------------------------------------------------------------
 handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
             #state{listener=ListSock, acceptor=Ref, module=Mod} = State) ->
@@ -148,26 +168,34 @@ handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, accept
     {noreply, State}.
 
 %%--------------------------------------------------------------------
-%% Function: terminate(Reason, State) -> void()
-%% Description: This function is called by a gen_server when it is about to
-%% terminate. It should be the opposite of Module:init/1 and do any necessary
-%% cleaning up. When it returns, the gen_server terminates with Reason.
-%% The return value is ignored.
+%% @private
+%% @doc
+%% This function is called by a gen_server when it is about to
+%% terminate. It should be the opposite of Module:init/1 and do any
+%% necessary cleaning up. When it returns, the gen_server terminates
+%% with Reason. The return value is ignored.
+%%
+%% @spec terminate(Reason, State) -> void()
+%% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
     gen_tcp:close(State#state.listener),
     ok.
 
 %%--------------------------------------------------------------------
-%% Func: code_change(OldVsn, State, Extra) -> {ok, NewState}
-%% Description: Convert process state when code is changed
+%% @private
+%% @doc
+%% Convert process state when code is changed
+%%
+%% @spec code_change(OldVsn, State, Extra) -> {ok, NewState}
+%% @end
 %%--------------------------------------------------------------------
 code_change(_OldVsn, State, _Extra) ->
     {ok, State}.
 
-%%--------------------------------------------------------------------
+%%%===================================================================
 %%% Internal functions
-%%--------------------------------------------------------------------
+%%%===================================================================
 %% Taken from prim_inet.  We are merely copying some socket options from the
 %% listening socket to the new client socket.
 set_sockopt(ListSock, CliSocket) ->
