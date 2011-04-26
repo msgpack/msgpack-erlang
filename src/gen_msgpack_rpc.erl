@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2010 UENISHI Kota
+%% Copyright (C) 2010-2011 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
@@ -15,11 +15,8 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
-%%%-------------------------------------------------------------------
-%%% @author UENISHI Kota <kuenishi@gmail.com>
-%%% @copyright (C) 2010, UENISHI Kota
 %%% @doc
-%%   mp_client is a client interface to access messagepack server.
+%%   gen_msgpack_rpc is a client interface to access messagepack server.
 %%   in erlang way, this is just a OTP worker. You can set your
 %%   code into your OTP supervision tree like a gen_server.
 %%
@@ -30,18 +27,17 @@
 %%  sample()->
 %%  %just as a syntax sugar for start_link
 %%  %YourModule defines receiver-callback when notification came from server.
-%%   {ok, Pid}=mp_client:connect(Identifier, YourModule, [Address, Port], [tcp]),
-%%   mp_client:call(Identifier, somemethod, [1,2]), % returns {ok, 3}
-%%   mp_client:call_async(Identifier, somemethod, [1,2]),
+%%   {ok, Pid}=gen_msgpack_rpc:connect(Identifier, YourModule, [Address, Port], [tcp]),
+%%   gen_msgpack_rpc:call(Identifier, somemethod, [1,2]), % returns {ok, 3}
+%%   gen_msgpack_rpc:call_async(Identifier, somemethod, [1,2]),
 %%   receive
 %%       {ok, Answer} -> ok;% maybe 3
 %%       _ -> error
 %%   after 1024 -> timeout end
-%%   mp_client:close(Pid).
+%%   gen_msgpack_rpc:close(Pid).
 %%  </code>
 %%% @end
-%%% Created : 26 Aug 2010 by UENISHI Kota <kuenishi@gmail.com>
-%%%-------------------------------------------------------------------
+
 -module(gen_msgpack_rpc).
 
 -behaviour(gen_server).

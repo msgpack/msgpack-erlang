@@ -15,7 +15,6 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
-
 %% @doc <a href="http://msgpack.org/">MessagePack</a> codec for Erlang.
 %%
 %%      APIs are almost compatible with <a href="http://redmine.msgpack.org/projects/msgpack/wiki/QuickStartC">C API</a>

@@ -1,8 +1,8 @@
 .eunit
 ebin/*.app
 ebin/*.beam
-edoc/*.html
-edoc/edoc-info
-edoc/erlang.png
-edoc/stylesheet.css
+doc/*.html
+doc/edoc-info
+doc/erlang.png
+doc/stylesheet.css
 *~

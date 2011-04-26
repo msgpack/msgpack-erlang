@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2010 UENISHI Kota
+%% Copyright (C) 2010-2011 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
@@ -15,14 +15,9 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
-%%%-------------------------------------------------------------------
-%%% @author UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
-%%% @copyright (C) 2011, UENISHI Kota
 %%% @doc
 %%%
 %%% @end
-%%% Created : 26 Apr 2011 by UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
-%%%-------------------------------------------------------------------
 -module(msgpack_rpc_listener).
 
 -behaviour(gen_server).
@@ -45,9 +40,9 @@
 %% @doc
 %% Starts the server
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
+-spec start_link(Mod::atom(), [term()]) -> {ok, Pid} | ignore | {error, Error}.
 start_link(Mod, Options) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Mod, Options], []).
 

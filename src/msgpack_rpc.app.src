@@ -1,11 +1,9 @@
 {application, msgpack_rpc,
  [{description, "MessagePack RPC server application"},
-  {vsn, "0.0.1"},
+  {vsn, "0.0.2"},
   {modules, 
-   [msgpack, mp_server_app,
-    mp_server_sup, mp_server_listener_sup, 
-    mp_server_session_sup, mp_server_srv,
-    mp_client, mp_session, msgpack_rpc
+   [gen_msgpack_rpc, gen_msgpack_rpc_srv,
+    msgpack, msgpack_rpc, msgpack_rpc_listener, msgpack_rpc_sessions, msgpack_rpc_sup
    ]
   },
   {registered, []},

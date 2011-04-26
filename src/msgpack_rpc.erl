@@ -15,13 +15,8 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
-%%%-------------------------------------------------------------------
-%%% File    : mp_server.erl
-%%% Author  : UENISHI Kota <kuenishi@gmail.com>
-%%% Description : MessagePack server
-%%%  @brief client-side interface
-%%% Created : 30 May 2010 by UENISHI Kota <kuenishi@gmail.com>
-%%%-------------------------------------------------------------------
+%%  @doc client-side interface
+%%  @end
 -module(msgpack_rpc).
 
 -export([start/0, stop/0, add_server/2, del_server/1]).
