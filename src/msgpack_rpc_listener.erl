@@ -42,7 +42,7 @@
 %%
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(Mod::atom(), [term()]) -> {ok, Pid} | ignore | {error, Error}.
+-spec start_link(Mod::atom(), [term()]) -> {ok, Pid::pid()} | ignore | {error, Error::term()}.
 start_link(Mod, Options) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Mod, Options], []).
 

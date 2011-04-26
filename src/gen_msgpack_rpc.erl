@@ -41,15 +41,18 @@
 -module(gen_msgpack_rpc).
 
 -behaviour(gen_server).
--include("mp_rpc.hrl").
+-include("msgpack_rpc.hrl").
 
 -define(SERVER, ?MODULE).
 
 %% external API
+-export([start_link/2, start_link/3]).
+
 -export([connect/2, connect/3, close/0, close/1,
 	 call/3, call/4,
 	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2,
-	 watch/2, watch/3]).
+	 watch/2, watch/3
+	]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -60,6 +63,12 @@
 %%====================================================================
 %% API
 %%====================================================================
+-spec start_link(Address::address(), Port::(0..65535))-> {ok, pid()}.
+start_link(A,P) -> connect(A,P).
+
+-spec start_link(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
+start_link(I,A,P) -> connect(I,A,P).
+
 -spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
 connect(Address, Port)->
     gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
@@ -68,8 +77,7 @@ connect(Address, Port)->
 % users can set any identifier to the connection
 -spec connect(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
 connect(Identifier, Address, Port)->
-    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}],
-			  []).
+    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
@@ -146,8 +154,8 @@ close()-> close(?SERVER).
 	       }).
 
 %% @private
-%% Function: init(Args) -> {ok, State} |
-%%                         {ok, State, Timeout} |
+%% Function: init(Args) -> {ok, State} |%
+%                         {ok, State, Timeout} |
 %%                         ignore               |
 %%                         {stop, Reason}
 %% Description: Initiates the server
