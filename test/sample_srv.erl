@@ -10,6 +10,8 @@
 
 -behaviour(gen_msgpack_rpc_srv).
 
+-include_lib("eunit/include/eunit.hrl").
+
 %% rpc methods
 -export([hello/0, add/2]).
 
@@ -42,3 +44,21 @@ code_change(_OldVsn, State, _Extra) ->
 %%====================================================================
 %% Internal functions
 %%====================================================================
+
+
+easy_test()->
+    {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
+    ?assert(is_pid(Pid)),
+
+    ok = mprc:start(),
+    {ok,S} = mprc:connect(localhost,9199,[]),
+    ?assert(is_port(S)),
+
+    ?assertEqual("hello, msgpack!", mprc:call(S, hello, [])),
+    ?assertEqual(234, mprc:call(S, add, [230,4])),
+    
+    ?assertEqual(ok, mprc:close(S)),
+    ok = mprc:stop(),
+
+    ?assertEqual(ok,gen_server:call(Pid,stop)),
+    ok.

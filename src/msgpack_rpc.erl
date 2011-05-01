@@ -19,7 +19,7 @@
 %%  @end
 -module(msgpack_rpc).
 
--export([start/0, stop/0, add_server/2, del_server/1]).
+-export([start/0, stop/0]).
 
 -spec start()-> ok | {error, any()}.
 start()->
@@ -28,11 +28,3 @@ start()->
 -spec stop()-> ok | {error, any()}.
 stop()->
     application:stop(?MODULE).
-
--spec add_server( Mod::atom(), Options::proplists:proplists())-> {ok, pid()}.
-add_server(Mod, Options)->
-    mp_server_listener_sup:add_server(Mod, Options).
-
--spec del_server( Name::atom())-> ok.
-del_server(Name)->
-    mp_server_listener_sup:del_server(Name).

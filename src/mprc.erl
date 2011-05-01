@@ -37,9 +37,8 @@
 -include("msgpack_rpc.hrl").
 
 %% external API
--export([connect/3, close/1,
-	 call/2, call_async/2
-	]).
+-export([start/0, stop/0,
+	 connect/3, close/1, call/3, call_async/3, join/2]).
 
 % -type address() :: string()|atom()|inet:ip_address().
 -type mprc() :: inet:socket().
@@ -47,6 +46,14 @@
 %%====================================================================
 %% API
 %%====================================================================
+-spec start()-> ok.
+start()->
+    ?MODULE=ets:new(?MODULE, [set,public,named_table]), ok.
+
+-spec stop()-> ok.
+stop()->
+    true=ets:delete(?MODULE), ok.
+
 -spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])->
 		     {ok, mprc()}|{error,Reason::term()}.
 connect(Address, Port, Options)->
@@ -57,40 +64,49 @@ connect(Address, Port, Options)->
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
--spec call(Method::atom(), Argv::list()) -> 
+-spec call(mprc(), Method::atom(), Argv::list()) -> 
 		  {ok, any()} | {error, {atom(), any()}}.
-call(Method, Argv) when is_atom(Method), is_list(Argv) ->
-    {ok, CallID}=call_async(Method,Argv),
-    CallID,
-    receive
-	{ok, nil,Result }->     {ok, Result};
-	{ok, ResCode,Result }-> {error,{ResCode, Result}};
-	{error, Reason2}->      {error, Reason2};
-	_Other ->               {error, {unknown, _Other}}
-    end.
+call(Sock, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    {ok,CallID}=call_async(Sock,Method,Argv),
+    ?MODULE:join(Sock,CallID).
 
-% TODO: write test code for call_async/3
-% afterwards, the caller will receive the response {ok, ResCode, Result} as a message
-%% -spec call_async(CallID::non_neg_integer(),
-%% 		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
-%% call_async(CallID, Method, Argv)->
-%%     call_async(?SERVER, CallID, Method, Argv).
-
--spec call_async(Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
-call_async(Method, Argv) when is_atom(Method), is_list(Argv)->
-    CallID = 3,
+call_async(Sock,Method,Argv)->
+    CallID = get_callid(),
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
     case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
 	{error, Reason}->
 	    {error, Reason};
-	_Pack ->
-	    ng
-%	    ok=gen_server:call(Client, {call, {CallID, Pid} ,Pack})
+	Pack ->
+	    ok=gen_tcp:send(Sock, Pack),
+	    {ok,CallID}
     end.
 
-% TODO: write test code for cancellation
-%% -spec cancel_async_call(CallID::non_neg_integer())->ok.
-%% cancel_async_call(CallID)-> cancel_async_call(?SERVER, CallID).
+-spec join(mprc(), integer() | [integer()]) -> term() | [term()] | {error, term()}.
+join(Sock, CallIDs) when is_list(CallIDs)-> join_(Sock, CallIDs, []);
+join(Sock, CallID)->
+    {ok, PackedMsg}  = gen_tcp:recv(Sock, 0),
+    {[?MP_TYPE_RESPONSE, CallID, Error, Retval], <<>>} = msgpack:unpack(PackedMsg),
+    call_done(CallID),
+    case {Error,Retval} of
+	{nil,Result}-> Result;
+	_Other ->      {error, {Error,Retval}}
+    end.
+
+join_(_Sock, [], Got)-> Got;
+join_(Sock, Remain, Got)->
+    {ok, PackedMsg}  = gen_tcp:recv(Sock, 0),
+    {[?MP_TYPE_RESPONSE, CallID, Error, Retval], <<>>} = msgpack:unpack(PackedMsg),
+    case lists:member(CallID, Remain) of
+	true->
+	    Remain0 = lists:delete(CallID, Remain),
+	    case {Error,Retval} of
+		{nil,Result}->
+		    join_(Sock, Remain0, [Result|Got]);
+		_Other -> 
+		    join_(Sock, Remain0, [{error, {Error,Retval}}|Got])
+	    end;
+	false -> {error, {bad_future, CallID}}
+    end.
 
 -spec close(mprc()) -> ok|{error,term()}.		    
 close(Client)-> gen_tcp:close(Client).
@@ -99,6 +115,16 @@ close(Client)-> gen_tcp:close(Client).
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+get_callid()->
+    Cand = random:uniform(16#FFFFFFFF),
+    case ets:insert_new(?MODULE, {Cand,Cand}) of
+	true -> Cand;
+	false -> get_callid()
+    end.
+
+call_done(CallID)->
+    true=ets:delete(?MODULE, CallID), ok.
+
 parse_options(_)->
     ok.
 

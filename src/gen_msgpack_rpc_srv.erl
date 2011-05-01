@@ -45,7 +45,7 @@ behaviour_info(_Other) ->
 %%--------------------------------------------------------------------
 start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
 %    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
-    gen_server:start_link(?MODULE, [Module,Socket], []).
+    {ok,_Pid}=gen_server:start_link(?MODULE, [Module,Socket], []).
 
 % TODO/TBF
 % notify(Node, Type, Method, Argv)->
@@ -67,8 +67,9 @@ init([]) ->
     {stop, {error,badarg}};
 init([Module,Socket]) when is_atom(Module), is_port(Socket)->
     %[active, nodelay, keepalive, delay_send, priority, tos]) of
+
     ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
-    case Module:init(Socket) of
+    case Module:init([]) of
 	{ok, Context}->
 	    {ok, #state{module=Module, socket=Socket, context=Context}};
 	Error ->
@@ -139,7 +140,7 @@ handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Conte
     end;
 
 handle_info({tcp_closed, Socket}, #state{socket=Socket} = State) ->
-    error_logger:info_msg("~p Client ~p disconnected.\n", [self(), hoge]),
+%    error_logger:debug_msg("~p Client ~p disconnected.\n", [self(), hoge]),
     {stop, normal, State};
 
 handle_info(_Info, State) ->

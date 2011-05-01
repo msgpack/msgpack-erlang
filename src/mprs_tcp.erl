@@ -18,12 +18,12 @@
 %%% @doc
 %%%
 %%% @end
--module(msgpack_rpc_listener_tcp).
+-module(mprs_tcp).
 
 -behaviour(gen_server).
 
 %% API
--export([start_link/2]).
+-export([start_link/2, start/2]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -31,6 +31,7 @@
 
 -define(SERVER, ?MODULE). 
 -record(state, {listener, acceptor, module}).
+-include_lib("eunit/include/eunit.hrl").
 
 %%%===================================================================
 %%% API
@@ -45,6 +46,11 @@
 -spec start_link(Mod::atom(), [term()]) -> {ok, Pid::pid()} | ignore | {error, Error::term()}.
 start_link(Mod, Options) ->
     gen_server:start_link({local, ?SERVER}, ?MODULE, [Mod, Options], []).
+
+% for test only
+-spec start(Mod::atom(), [term()]) -> {ok, Pid::pid()} | ignore | {error, Error::term()}.
+start(Mod, Options) ->
+    gen_server:start({local, ?SERVER}, ?MODULE, [Mod, Options], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -61,7 +67,10 @@ start_link(Mod, Options) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Mod,Host, Port]) ->
+
+init([Mod,Options]) ->
+    {Host,Options0} = msgpack_util:pppop(host,Options),
+    {Port,_Options1} = msgpack_util:pppop(port,Options0),
     init_(Mod,Host,Port).
 
 init_(Mod, Host, Port) when is_atom(Host)->
@@ -74,7 +83,6 @@ init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
     Opts = [binary, {packet, raw}, {reuseaddr, true},
             {keepalive, true}, {backlog, 30}, {active, false}, {ip, Addr}
 	   ],
-    
     process_flag(trap_exit, true),
     case gen_tcp:listen(Port, Opts) of
 	{ok, ListenSocket} ->
@@ -84,6 +92,7 @@ init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
 			acceptor = Ref,
 			module = Mod}};
 	{error, Reason} ->
+	    ?debugVal(Reason),
 	    {stop, Reason}
     end.
 
@@ -101,8 +110,10 @@ init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
 %%                                   {stop, Reason, State}
 %% @end
 %%--------------------------------------------------------------------
+handle_call(stop, _, State)->
+    {stop, normal, ok, State};
 handle_call(Request, _From, State) ->
-    {stop, {unknown_call, Request}, State}.
+    {stop, {unknown_call, Request}, {ok, abnormal}, State}.
 
 %%--------------------------------------------------------------------
 %% @private
@@ -131,21 +142,19 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
             #state{listener=ListSock, acceptor=Ref, module=Mod} = State) ->
     try
 %	inet:setsockopts(ListSock, [{active,once}]),
-	case set_sockopt(ListSock, CliSocket) of
-	    ok              -> ok;
-	    {error, Reason} -> exit({set_sockopt, Reason})
-	end,
+	ok=set_sockopt(ListSock, CliSocket),
 
         %% New client connected - spawn a new process using the simple_one_for_one
         %% supervisor.
-        {ok, Pid} = mp_server_session_sup:start_client(Mod, CliSocket),
-        gen_tcp:controlling_process(CliSocket, Pid),
-%	set_sockopt(ListSock, CliSocket),
+	{ok,Pid}=gen_msgpack_rpc_srv:start_link(Mod,CliSocket),
+%	{ok,Pid}=proc_lib:start_link(Mod, start_link, [CliSocket]),
+
+        ok=gen_tcp:controlling_process(CliSocket, Pid),
 
         %% Signal the network driver that we are ready to accept another connection
         case prim_inet:async_accept(ListSock, -1) of
-        {ok,    NewRef} -> ok;
-        {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
+	    {ok,    NewRef} -> ok;
+	    {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
         end,
 
         {noreply, State#state{acceptor=NewRef}}
@@ -155,8 +164,20 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
     end;
 
 handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
+    ?debugVal(hoege),
     error_logger:error_msg("Error in socket acceptor: ~p.\n", [Error]),
-    {stop, Error, State};handle_info(_Info, State) ->
+    {stop, Error, State};
+
+handle_info({'EXIT', _Pid, normal}, State) ->
+    ?debugVal(hoege),
+    {noreply, State};
+handle_info({'EXIT', _Pid, Reason}, State) ->
+    %% If there was an unexpected error accepting, log and sleep.
+    error_logger:error_report({?MODULE, ?LINE, {error, Reason}}),
+    {noreply, State};
+
+handle_info(_Info, State) ->
+    error_logger:error_report({?MODULE, ?LINE, {_Info}}),
     {noreply, State}.
 
 %%--------------------------------------------------------------------
@@ -171,8 +192,7 @@ handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, accept
 %% @end
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    gen_tcp:close(State#state.listener),
-    ok.
+    gen_tcp:close(State#state.listener).
 
 %%--------------------------------------------------------------------
 %% @private

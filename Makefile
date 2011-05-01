@@ -1,6 +1,12 @@
-.PHONY: compile xref eunit clean doc check
+.PHONY: compile xref eunit clean doc check make
 
 all: compile xref eunit
+
+# for busy typos
+m: all
+ma: all
+mak: all
+make: all
 
 compile:
 	@./rebar compile

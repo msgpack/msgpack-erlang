@@ -7,16 +7,18 @@
 %%%-------------------------------------------------------------------
 -module(sample_app).
 
+-include_lib("eunit/include/eunit.hrl").
+
 %% Application callbacks
--export([start/0, stop/0]).
+%-export([start_link/1]).
 
-start()->
-    msgpack_rpc:start(),
-    case msgpack_rpc:add_server(sample_srv, [{addr, localhost}]) of
-	{ok, _} -> ok;
-	Other -> Other
-    end.
+%% start()->
+%%     msgpack_rpc:start(),
+%%     case msgpack_rpc:add_server(sample_srv, [{addr, localhost}]) of
+%% 	{ok, _} -> ok;
+%% 	Other -> Other
+%%     end.
 
-stop()->
-    msgpack_rpc:del_server(sample_srv),
-    msgpack_rpc:stop().
+%% stop()->
+%%     msgpack_rpc:del_server(sample_srv),
+%%     msgpack_rpc:stop().
