@@ -18,7 +18,7 @@
 -module(gen_msgpack_rpc_srv).
 
 -behaviour(gen_server).
--include("mp_rpc.hrl").
+-include("msgpack_rpc.hrl").
 
 %% API
 -export([start_link/2, behaviour_info/1]).
