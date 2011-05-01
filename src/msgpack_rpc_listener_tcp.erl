@@ -18,7 +18,7 @@
 %%% @doc
 %%%
 %%% @end
--module(msgpack_rpc_listener).
+-module(msgpack_rpc_listener_tcp).
 
 -behaviour(gen_server).
 
@@ -61,11 +61,8 @@ start_link(Mod, Options) ->
 %%                     {stop, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([Mod, Options]) ->
-    Addr = proplists:get_value(addr, Options, {0,0,0,0}),
-    Port = proplists:get_value(port, Options, 65500),
-    init_(Mod,Addr,Port).
-
+init([Mod,Host, Port]) ->
+    init_(Mod,Host,Port).
 
 init_(Mod, Host, Port) when is_atom(Host)->
     {ok,Addr} = inet:getaddr(Host, inet),

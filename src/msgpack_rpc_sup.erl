@@ -20,12 +20,15 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0]).
+-export([start_link/2, start_link/3]).
 
 %% Supervisor callbacks
 -export([init/1]).
 
 -define(SERVER, ?MODULE).
+
+-type option() :: {host, inet:ip_address()|inet:hostname()}|{port, inet:ip_port()}|
+		  {transport, msgpack_rpc:transport()}.
 
 %%%===================================================================
 %%% API functions
@@ -35,11 +38,15 @@
 %% @doc
 %% Starts the supervisor
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+-spec start_link(atom(), [option()])-> {ok, pid()}.
+start_link(Mod,Options) ->
+    msgpack_rpc_sup:start_link(?SERVER, ?MODULE, [Mod,Options]).
+
+-spec start_link(Id::atom(), atom(), [option()])-> {ok, pid()}.
+start_link(Id,Mod,Options) ->
+    supervisor:start_link({loacl,Id}, ?MODULE, [Id,Mod,Options]).
 
 %%%===================================================================
 %%% Supervisor callbacks
@@ -58,25 +65,51 @@ start_link() ->
 %%                     {error, Reason}
 %% @end
 %%--------------------------------------------------------------------
-init([]) ->
+init([Id,Mod,Options]) ->
+    % Options for tcp ports
+    {Host, Options0} = msgpack_util:pppop(host, Options),
+    {Port, Options1} = msgpack_util:pppop(port, Options0),
+    % remain goes to user defined modules
+
+    {Transport, Options2} = msgpack_util:pppop(transport, Options1),
+
     RestartStrategy = one_for_one,
     MaxRestarts = 1000,
     MaxSecondsBetweenRestarts = 3600,
 
     SupFlags = {RestartStrategy, MaxRestarts, MaxSecondsBetweenRestarts},
 
-    Restart = permanent,
-    Shutdown = 2000,
+    ChildSpecs = children(Transport, Host, Port, Id, Mod, Options2),
+    {ok, {SupFlags, ChildSpecs}}.
 
-    Children = [{msgpack_rpc_sessions,
-		 { msgpack_rpc_sessions,start_link,[]},
-		 Restart, Shutdown, supervisor, []},
-                {msgpack_rpc_listener,
-		 {msgpack_rpc_listener,start_link,[]},
-		 Restart, Shutdown, worker, []}],
-    ok=supervisor:check_childspecs(Children),
-    {ok, {SupFlags, Children}}.
 
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+
+children(tcp,  Host, Port, Id, Mod, Options)->
+
+    Restart = permanent,
+    Shutdown = 2000,
+
+    Children = [{msgpack_rpc_sessions,
+		 { msgpack_rpc_sessions,start_link,[Mod,Options]},
+		 Restart, Shutdown, supervisor, []},
+                {msgpack_util:append_srv(Id),
+		 {msgpack_rpc_listener_tcp,start_link,[Host,Port]},
+		 Restart, Shutdown, worker, []}],
+    ok=supervisor:check_childspecs(Children),
+    Children;
+
+children(udp, Host, Port, _Id, Mod, Options) ->
+    Restart = permanent,
+    Shutdown = 2000,
+
+    Children = [{msgpack_rpc_listener_udp,
+		 {msgpack_rpc_listener_udp,start_link,[Host,Port,Mod, Options]},
+		 Restart, Shutdown, worker, []}],
+    ok=supervisor:check_childspecs(Children),
+    Children;
+
+children(T, _, _, _, _, _) ->
+    {error, {not_supported,T}}.

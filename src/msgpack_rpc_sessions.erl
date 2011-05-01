@@ -24,7 +24,7 @@
 -behaviour(supervisor).
 
 %% API
--export([start_link/0, start_client/2]).
+-export([start_link/1, start_client/1]).
 
 %% Supervisor callbacks
 -export([init/1]).
@@ -38,16 +38,16 @@
 %% @doc
 %% Starts the supervisor
 %%
-%% @spec start_link() -> {ok, Pid} | ignore | {error, Error}
+%% @spec start_link(Mod) -> {ok, Pid} | ignore | {error, Error}
 %% @end
 %%--------------------------------------------------------------------
-start_link() ->
-    supervisor:start_link({local, ?SERVER}, ?MODULE, []).
+start_link(Module) ->
+    supervisor:start_link(?MODULE, [Module]).
 
 %% A startup function for spawning new client connection handling FSM.
 %% To be called by the TCP listener process.
-start_client(Module, Socket) ->
-    supervisor:start_child(?SERVER, [Module, Socket]).
+start_client(Socket) ->
+    supervisor:start_child(?SERVER, [Socket]).
 
 %%%===================================================================
 %%% Supervisor callbacks

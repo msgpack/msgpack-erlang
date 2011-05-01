@@ -24,6 +24,8 @@
 -type name() :: atom().
 -type global_name() :: term().
 
+-type transport() :: tcp | udp. % sctp | snappy | zip | etc...
+
 -type server_name() :: {local, name()} | {global, global_name()}.
 -type server_ref() :: pid() | name() | { name(), node() } | {global, global_name()}.
  
