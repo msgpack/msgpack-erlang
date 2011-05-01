@@ -15,6 +15,24 @@ See <a href="http://redmine.msgpack.org/projects/msgpack/wiki/QuickStartErlang">
 <h2>Current Status</h2>
 Now developing. First release (0.0.1) is coming soon.
 <h2>Overall Design</h2>
+You can use MessagePack-RPC framework in 2 ways:
+<ol>
+	<li>application mode:
+	<code>
+	msgpack_rpc:start(),
+	msgpack_rpc:add_server(YourMod, Options),
+	msgpack_rpc:add_server(YourMod1, Options),
+	msgpack_rpc:add_server(YourMod2, Options),
+	...
+	</code>
+	</li>
+	<li>build msgpack_rpc supervisor into your application
+	<code>
+	start(_Type,StartArgs) ->
+	  msgpack_rpc_sup:start_link(YourMod, Options).
+	  </code>
+	</li>
+</ol>
 <h3>Client</h3>
 Just a simple API... 
 <ol>

@@ -1,3 +1,5 @@
+.PHONY: compile xref eunit clean doc check
+
 all: compile xref eunit
 
 compile:
