@@ -21,27 +21,29 @@
 %%  sample()->
 %%  %just as a syntax sugar for start_link
 %%  %YourModule defines receiver-callback when notification came from server.
-%%   {ok, Pid}=gen_msgpack_rpc:connect(Identifier, YourModule, [Address, Port], [tcp]),
-%%   gen_msgpack_rpc:call(Identifier, somemethod, [1,2]), % returns {ok, 3}
-%%   gen_msgpack_rpc:call_async(Identifier, somemethod, [1,2]),
+%%   {ok, S}=mprc:connect(Address, Port, [tcp]),
+%%   mprc:call(S, somemethod, [1,2]), % returns 3
+%%   mprc:call_async(S, somemethod, [1,2]),
 %%   receive
 %%       {ok, Answer} -> ok;% maybe 3
 %%       _ -> error
 %%   after 1024 -> timeout end
-%%   gen_msgpack_rpc:close(Pid).
+%%   mprc:close(Pid).
 %%  </code>
 %%% @end
 
 -module(mprc).
 
 -include("msgpack_rpc.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% external API
 -export([start/0, stop/0,
 	 connect/3, close/1, call/3, call_async/3, join/2]).
 
-% -type address() :: string()|atom()|inet:ip_address().
--type mprc() :: inet:socket().
+-record(mprc, { s :: inet:socket(), carry = <<>> :: binary() }).
+
+-type mprc() :: #mprc{}.
 
 %%====================================================================
 %% API
@@ -58,69 +60,95 @@ stop()->
 		     {ok, mprc()}|{error,Reason::term()}.
 connect(Address, Port, Options)->
     _Options1 = parse_options(Options),
-    gen_tcp:connect(Address, Port, [binary, {packet,0}, {active,false}]).
+    {ok,S}=gen_tcp:connect(Address, Port, [binary, {packet,0}, {active,false}]),
+    {ok, #mprc{s=S}}.
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
 -spec call(mprc(), Method::atom(), Argv::list()) -> 
-		  {ok, any()} | {error, {atom(), any()}}.
-call(Sock, Method, Argv) when is_atom(Method), is_list(Argv) ->
-    {ok,CallID}=call_async(Sock,Method,Argv),
-    ?MODULE:join(Sock,CallID).
+		  {ok, term()} | {error, {atom(), any()}}.
+call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    {ok,CallID}=call_async(MPRC,Method,Argv),
+    ?MODULE:join(MPRC,CallID).
 
-call_async(Sock,Method,Argv)->
+call_async(MPRC,Method,Argv)->
     CallID = get_callid(),
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
     case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
 	{error, Reason}->
 	    {error, Reason};
 	Pack ->
-	    ok=gen_tcp:send(Sock, Pack),
+	    ok=gen_tcp:send(MPRC#mprc.s, Pack),
 	    {ok,CallID}
     end.
 
--spec join(mprc(), integer() | [integer()]) -> term() | [term()] | {error, term()}.
-join(Sock, CallIDs) when is_list(CallIDs)-> join_(Sock, CallIDs, []);
-join(Sock, CallID)->
-    {ok, PackedMsg}  = gen_tcp:recv(Sock, 0),
-    {[?MP_TYPE_RESPONSE, CallID, Error, Retval], <<>>} = msgpack:unpack(PackedMsg),
-    call_done(CallID),
-    case {Error,Retval} of
-	{nil,Result}-> Result;
-	_Other ->      {error, {Error,Retval}}
-    end.
+-spec join(mprc(), integer() | [integer()]) -> {term(), mprc} | {[term()], mprc()} | {error, term()}.
+join(MPRC, CallIDs) when is_list(CallIDs)-> join_(MPRC, CallIDs, []);
+join(MPRC, CallID)-> 
+    {[Term], MPRC0} = join_(MPRC, [CallID], []),
+    {Term, MPRC0}.
 
-join_(_Sock, [], Got)-> Got;
-join_(Sock, Remain, Got)->
-    {ok, PackedMsg}  = gen_tcp:recv(Sock, 0),
-    {[?MP_TYPE_RESPONSE, CallID, Error, Retval], <<>>} = msgpack:unpack(PackedMsg),
-    case lists:member(CallID, Remain) of
-	true->
-	    Remain0 = lists:delete(CallID, Remain),
-	    case {Error,Retval} of
-		{nil,Result}->
-		    join_(Sock, Remain0, [Result|Got]);
-		_Other -> 
-		    join_(Sock, Remain0, [{error, {Error,Retval}}|Got])
+join_(MPRC, [], Got)-> {Got, MPRC};
+join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
+    case ets:lookup(?MODULE, CallID) of
+	[{CallID,CallID}|_] ->
+	    case msgpack:unpack(MPRC#mprc.carry) of
+		{[?MP_TYPE_RESPONSE, CallID, Error, Retval], RemainBin}->
+		    MPRC0 = MPRC#mprc{carry=RemainBin},
+		    call_done(CallID),
+		    case Error of
+			nil ->
+			    %?debugVal(Retval),
+			    %?debugVal(Remain),
+			    %?debugVal(ets:tab2list(?MODULE)),
+			    join_(MPRC0, Remain, [Retval|Got]);
+			_Other -> 
+			    join_(MPRC0, Remain, [{error, {Error,Retval}}|Got])
+		    end;
+		{[?MP_TYPE_RESPONSE, CallID0, Error, Retval], RemainBin}->
+		    insert({CallID0, Error, Retval}),
+		    MPRC0 = MPRC#mprc{carry=RemainBin},
+		    join_(MPRC0, [CallID|Remain], Got);
+		{error, incomplete} ->
+		    {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
+		    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
+		    join_(MPRC#mprc{carry=NewBin}, Remain, Got);
+		{error, Reason} ->
+		    {error, Reason}
 	    end;
-	false -> {error, {bad_future, CallID}}
-    end.
+	[{CallID,Error,Retval}|_] ->
+	    call_done(CallID),
+	    case Error of
+		nil ->
+		    join_(MPRC, Remain, [Retval|Got]);
+		_Other -> 
+		    join_(MPRC, Remain, [{error, {Error,Retval}}|Got])
+	    end
+	end;
+join_(MPRC, Remain, Got) ->
+    %?debugVal(Remain), %?debugVal(MPRC),
+    {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
+    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
+    join_(MPRC#mprc{carry=NewBin}, Remain, Got).
 
 -spec close(mprc()) -> ok|{error,term()}.		    
-close(Client)-> gen_tcp:close(Client).
+close(Client)-> gen_tcp:close(Client#mprc.s).
 
 
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
 get_callid()->
-    Cand = random:uniform(16#FFFFFFFF),
+    Cand = random:uniform(16#FFFFFFF),
     case ets:insert_new(?MODULE, {Cand,Cand}) of
 	true -> Cand;
 	false -> get_callid()
     end.
+
+insert(ResultTuple)->
+    true=ets:insert(?MODULE, ResultTuple), ok.
 
 call_done(CallID)->
     true=ets:delete(?MODULE, CallID), ok.
@@ -134,11 +162,9 @@ parse_options(_)->
 
 module_test_()->
     {setup, local,
-     fun()-> ok end,
-     fun(_)-> ok end,
+     fun()-> mprc:start() end,
+     fun(_)-> mprc:stop() end,
      [
-%      fun()-> mprc:start(), mprc:stop() end
-%      fun() -> ok end,
      ]
     }.
 

@@ -33,7 +33,10 @@ behaviour_info(callbacks) ->
 behaviour_info(_Other) ->
     undefined.
 
--record(state, {socket, module, context}).
+-record(state, {socket :: inet:socket(),
+		module :: atom(),
+		context,
+		carry = <<>> :: binary()}).
 
 %%====================================================================
 %% API
@@ -115,28 +118,34 @@ handle_cast(Msg, #state{context=Context,module=Module}=State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Context} = State) ->
-    try
-	{[Req,CallID,M,Argv],<<>>}=msgpack:unpack(Bin),
-	case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
-	    {ok, NextContext}->
-						% Flow control: enable forwarding of next TCP message
-		ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
-		
-		{noreply, State#state{context=NextContext}};
-	    {stop, Reason}->
-		{stop, Reason};
-	    _Other->
-		error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other]),
-		{noreply, State}
-	end
-    catch
-	_:{badmatch, X}->
-	    error_logger:error_msg("badmatch, bad binary ~p from ~p~n", [X, inet:peername(Socket)]),
-	    {noreply, State};
-	_:What ->
-	    error_logger:error_msg("failed: ~p~n", [What]),
-	    {noreply, State}
+handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Context,carry=Carry} = State) ->
+    NewBin = <<Carry/binary, Bin/binary>>,
+%    try
+	case msgpack:unpack(NewBin) of
+	    {[Req,CallID,M,Argv], Remain} ->
+		case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
+		    {ok, NextContext}->
+			% Flow control: enable forwarding of next TCP message
+			ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
+			{noreply, State#state{context=NextContext, carry=Remain}};
+		    {stop, Reason}->
+			{stop, Reason};
+		    _Other->
+			error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other]),
+			{noreply, State}
+		end;
+	    {error, incomplete} -> % carry over
+		{noreply, State#state{carry=NewBin}};
+	    {error, Reason} ->
+		{stop, Reason, State}
+    %% 	end
+    %% catch
+    %% 	_:{badmatch, X}->
+    %% 	    error_logger:error_msg("badmatch, bad binary ~p from ~p~n", [X, inet:peername(Socket)]),
+    %% 	    {noreply, State};
+    %% 	_:What ->
+    %% 	    error_logger:error_msg("failed: ~p~n", [What]),
+    %% 	    {noreply, State}
     end;
 
 handle_info({tcp_closed, Socket}, #state{socket=Socket} = State) ->
