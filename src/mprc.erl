@@ -39,7 +39,8 @@
 
 %% external API
 -export([start/0, stop/0,
-	 connect/3, close/1, call/3, call_async/3, join/2]).
+	 connect/3, close/1, call/3, call_async/3, join/2,
+	 controlling_process/1, active_once/1, append_binary/2]).
 
 -record(mprc, { s :: inet:socket(), carry = <<>> :: binary() }).
 
@@ -136,6 +137,17 @@ join_(MPRC, Remain, Got) ->
 -spec close(mprc()) -> ok|{error,term()}.		    
 close(Client)-> gen_tcp:close(Client#mprc.s).
 
+-spec controlling_process(mprc())-> ok.
+controlling_process(MPRC)->				 
+    gen_tcp:controlling_process(MPRC#mprc.s, self()).
+
+-spec active_once(mprc())-> ok.
+active_once(MPRC)->
+    inet:setopts(MPRC#mprc.s, [{active,once}]).
+
+append_binary(MPRC, Bin)->
+    NewBin = <<(MPRC#mprc.carry)/binary, Bin/binary>>,
+    MPRC#mprc{carry=NewBin}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions
