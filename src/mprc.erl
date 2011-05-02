@@ -39,7 +39,8 @@
 
 %% external API
 -export([start/0, stop/0,
-	 connect/3, close/1, call/3, call_async/3, join/2]).
+	 connect/3, close/1, call/3, call_async/3, join/2,
+	 controlling_process/1, active_once/1, append_binary/2]).
 
 -record(mprc, { s :: inet:socket(), carry = <<>> :: binary() }).
 
@@ -50,11 +51,11 @@
 %%====================================================================
 -spec start()-> ok.
 start()->
-    ?MODULE=ets:new(?MODULE, [set,public,named_table]), ok.
+    msgpack_util:start().
 
 -spec stop()-> ok.
 stop()->
-    true=ets:delete(?MODULE), ok.
+    msgpack_util:stop().
 
 -spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])->
 		     {ok, mprc()}|{error,Reason::term()}.
@@ -74,7 +75,7 @@ call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     ?MODULE:join(MPRC,CallID).
 
 call_async(MPRC,Method,Argv)->
-    CallID = get_callid(),
+    CallID = msgpack_util:get_callid(),
     Meth = <<(atom_to_binary(Method,latin1))/binary>>,
     case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
 	{error, Reason}->
@@ -92,12 +93,12 @@ join(MPRC, CallID)->
 
 join_(MPRC, [], Got)-> {Got, MPRC};
 join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
-    case ets:lookup(?MODULE, CallID) of
+    case msgpack_util:lookup(CallID) of
 	[{CallID,CallID}|_] ->
 	    case msgpack:unpack(MPRC#mprc.carry) of
 		{[?MP_TYPE_RESPONSE, CallID, Error, Retval], RemainBin}->
 		    MPRC0 = MPRC#mprc{carry=RemainBin},
-		    call_done(CallID),
+		    msgpack_util:call_done(CallID),
 		    case Error of
 			nil ->
 			    %?debugVal(Retval),
@@ -108,7 +109,7 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 			    join_(MPRC0, Remain, [{error, {Error,Retval}}|Got])
 		    end;
 		{[?MP_TYPE_RESPONSE, CallID0, Error, Retval], RemainBin}->
-		    insert({CallID0, Error, Retval}),
+		    msgpack_util:insert({CallID0, Error, Retval}),
 		    MPRC0 = MPRC#mprc{carry=RemainBin},
 		    join_(MPRC0, [CallID|Remain], Got);
 		{error, incomplete} ->
@@ -119,7 +120,7 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 		    {error, Reason}
 	    end;
 	[{CallID,Error,Retval}|_] ->
-	    call_done(CallID),
+	    msgpack_util:call_done(CallID),
 	    case Error of
 		nil ->
 		    join_(MPRC, Remain, [Retval|Got]);
@@ -136,23 +137,21 @@ join_(MPRC, Remain, Got) ->
 -spec close(mprc()) -> ok|{error,term()}.		    
 close(Client)-> gen_tcp:close(Client#mprc.s).
 
+-spec controlling_process(mprc())-> ok.
+controlling_process(MPRC)->				 
+    gen_tcp:controlling_process(MPRC#mprc.s, self()).
+
+-spec active_once(mprc())-> ok.
+active_once(MPRC)->
+    inet:setopts(MPRC#mprc.s, [{active,once}]).
+
+append_binary(MPRC, Bin)->
+    NewBin = <<(MPRC#mprc.carry)/binary, Bin/binary>>,
+    MPRC#mprc{carry=NewBin}.
 
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-get_callid()->
-    Cand = random:uniform(16#FFFFFFF),
-    case ets:insert_new(?MODULE, {Cand,Cand}) of
-	true -> Cand;
-	false -> get_callid()
-    end.
-
-insert(ResultTuple)->
-    true=ets:insert(?MODULE, ResultTuple), ok.
-
-call_done(CallID)->
-    true=ets:delete(?MODULE, CallID), ok.
-
 parse_options(_)->
     ok.
 

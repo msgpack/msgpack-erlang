@@ -46,12 +46,10 @@
 -define(SERVER, ?MODULE).
 
 %% external API
--export([start_link/2, start_link/3]).
+-export([start_link/5, stop/1, behaviour_info/1]).
 
--export([connect/2, connect/3, close/0, close/1,
-	 call/3, call/4,
-	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2,
-	 watch/2, watch/3
+-export([call/3,
+	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2
 	]).
 
 %% internal: gen_server callbacks
@@ -60,44 +58,37 @@
 
 -type address() :: string()|atom()|inet:ip_address().
 
+-spec behaviour_info(atom()) -> 'undefined' | [{atom(), arity()}].
+behaviour_info(callbacks) ->
+    [{init,1}, {handle_call,3}, {terminate,2}, {code_change,3}];
+behaviour_info(_Other) ->
+    undefined.
+
+-record(state, { module :: atom(), mprc :: mprc:mprc() }).
+
 %%====================================================================
 %% API
 %%====================================================================
--spec start_link(Address::address(), Port::(0..65535))-> {ok, pid()}.
-start_link(A,P) -> connect(A,P).
 
--spec start_link(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
-start_link(I,A,P) -> connect(I,A,P).
-
--spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
-connect(Address, Port)->
-    gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
+-spec start_link(Identifier::term(), Module::atom(),
+		 Address::address(), Port::(0..65535), [term()]) ->  {ok, pid()}.
+start_link(I,M,A,P,Options) -> 
+    MPRC=mprc:connect(A,P,Options),
+    gen_server:start_link(I, gen_msgpack_rpc, [M,MPRC,Options]).
 % for debug			  [{debug,[trace,log,statistics]}]).
 
-% users can set any identifier to the connection
--spec connect(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
-connect(Identifier, Address, Port)->
-    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
+-spec stop(Identifier::term()) -> ok.
+stop(Id)->
+    gen_server:call(Id, stop).
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
--spec call(CallID::non_neg_integer(), Method::atom(), Argv::list()) -> 
+-spec call(Id::term(), Method::atom(), Argv::list()) -> 
     {ok, any()} | {error, {atom(), any()}}.
-call(CallID, Method, Argv) ->   call(?SERVER, CallID, Method, Argv).
-
--spec call(Client::server_ref(), CallID::non_neg_integer(), 
-	   Method::atom(), Argv::list()) -> 
-		  {ok, any()} | {error, {atom(), any()}}.
-call(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv) ->
-    ok=call_async(Client,CallID,Method,Argv),
-    receive
-	{ok, nil,Result }->     {ok, Result};
-	{ok, ResCode,Result }-> {error,{ResCode, Result}};
-	{error, Reason2}->       {error, Reason2};
-	_Other ->               {error, {unknown, _Other}}
-    end.
+call(Id, Method, Argv) ->
+    gen_server:call(Id, {call_async, Method, Argv}, 0).
 
 % TODO: write test code for call_async/3
 % afterwards, the caller will receive the response {ok, ResCode, Result} as a message
@@ -126,32 +117,9 @@ cancel_async_call(CallID)-> cancel_async_call(?SERVER, CallID).
 cancel_async_call(Client, CallID)->
     gen_server:call(Client, {cancel, CallID}).
 
-% set a callback for notification from server.
--spec watch(Method::atom(), Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
-watch(Method, Callback) ->   watch(?SERVER, Method, Callback).
-
--spec watch(Client::server_ref(), Method::atom(),
-	    Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
-watch(Client, Method, Callback) when is_atom(Method), is_function(Callback,2)->
-    gen_server:call(Client, {watch, Method, Callback}).
-
-% users can set any identifier to the connection
--spec close(Identifier::server_name())-> any().
-close(Identifier)->  gen_server:call(Identifier, stop).
-
--spec close() -> any().		    
-close()-> close(?SERVER).
-
-
 %%====================================================================
 %% gen_server callbacks
 %%====================================================================
--record(state, {socket :: inet:sockt(),
-		addr,
-		port :: 1..65536,
-		reqs = [] :: [{integer(), pid()}],
-		events = [] :: [{atom(), fun()}]
-	       }).
 
 %% @private
 %% Function: init(Args) -> {ok, State} |%
@@ -160,11 +128,9 @@ close()-> close(?SERVER).
 %%                         {stop, Reason}
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
-init(Config)->
-    Address = proplists:get_value(address, Config, localhost),
-    Port = proplists:get_value(port, Config, 65500),
-    {ok, S}=gen_tcp:connect(Address, Port, [binary, {active,once},{packet,raw}]),
-    {ok, #state{socket=S, addr=Address, port=Port}}.
+init([Mod, MPRC, _Options])->
+    ok=mprc:controlling_process(MPRC),
+    {ok, #state{module=Mod, mprc = MPRC}}.
 
 %% @private
 %% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
@@ -175,19 +141,10 @@ init(Config)->
 %%                                      {stop, Reason, State}
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
-handle_call({call, {Id, Pid}, Pack}, _From, State)->
-    Reqs = [{Id, Pid}|State#state.reqs],
-    ok = gen_tcp:send(State#state.socket, Pack),
-    ok = inet:setopts(State#state.socket, [{active,once}]),
-    {reply, ok, State#state{reqs=Reqs}};
-
-handle_call({cancel, Id}, _From, State)->
-    List=proplists:delete(Id, State#state.reqs),
-    {repoly, ok, List};
-
-handle_call({watch, Method, Callback}, _From, State)->
-    List = [{Method,Callback}|State#state.events],
-    {repoly, ok, List};
+handle_call({call, Method, Argv}, From, #state{mprc=MPRC} = State)->
+    CallID = mprc:call_async(MPRC, Method, Argv),
+    msgpack_util:insert({CallID,From}),
+    {reply, {ok, CallID}, State};
 
 handle_call(stop, _From, State)->
     {stop, normal, ok, State};
@@ -210,37 +167,42 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({tcp, _Socket, Pack}, State)->
+handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
     case msgpack:unpack(Pack) of
-	{error, _Reason} ->
-	    ok = inet:setopts(State#state.socket, [{active,once}]),
-	    {noreply, State};
 	{[?MP_TYPE_NOTIFICATION,Method,Params],_RemBin}->
+	    % maybe we need string whilelist for atom-attack
 	    Meth = binary_to_atom(Method, latin1),
-	    case proplists:get_value(Meth, State#state.events) of
-		undefined->	    ok;
-		Callback when is_function(Callback,2)->
-		    try Callback(Params) catch _:E -> io:format("~p~n", [E]) end;
-		_Other ->
-		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
+	    try
+		_Ret=erlang:apply(Mod,Meth,Params)
+	    catch _:_Other ->
+		    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
 	    end,
-	    ok = inet:setopts(State#state.socket, [{active,once}]),
+
 	    {noreply, State};
-%     get method from State -> callback them
-	{[?MP_TYPE_RESPONSE,CallID,ResCode,Result],_RemBin} ->
-	    case proplists:get_value(CallID, State#state.reqs) of
-		undefined->
-		    ok = inet:setopts(State#state.socket, [{active,once}]),
-		    {noreply, State};
-		Pid when is_pid(Pid)->
-		    Pid ! {ok, ResCode, Result},
-		    ok = inet:setopts(State#state.socket, [{active,once}]),
-		    {noreply, State#state{reqs=proplists:delete(CallID, State#state.reqs)}};
+	{[?MP_TYPE_RESPONSE,CallID,ResCode,Result],RemBin} ->
+	    case msgpack_util:lookup(CallID) of
+		[]->
+		    ok = mprc:active_once(MPRC),
+		    {noreply, State#state{mprc=mprc:append_binary(MPRC,RemBin)}};
+		[{CallID,From}|_] ->
+		    msgpack_util:call_done(CallID),
+		    case ResCode of
+			nil -> gen_server:reply(From, Result);
+			Error -> gen_server:reply(From, {Error,Result})
+		    end,
+		    ok = mprc:active_once(MPRC),
+		    {noreply, State#state{mprc=mprc:append_binary(MPRC,RemBin)}};
 		_Other ->		% Error
 		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other]),
-		    ok = inet:setopts(State#state.socket, [{active,once}]),
-		    {noreply, State#state{reqs=proplists:delete(CallID, State#state.reqs)}}
-	    end
+		    ok = mprc:active_once(MPRC),
+		    {noreply, State}
+	    end;
+	{error, incomplete} ->
+	    ok = mprc:active_once(MPRC),
+	    {noreply, State#state{mprc=mprc:append_binary(MPRC,Pack)}};
+	{error, _Reason} ->
+	    ok = mprc:active_once(MPRC),
+	    {noreply, State}
     end;
 
 handle_info(_Info, State) ->
@@ -254,7 +216,7 @@ handle_info(_Info, State) ->
 %% The return value is ignored.
 %%--------------------------------------------------------------------
 terminate(_Reason, State) ->
-    gen_tcp:close(State#state.socket),
+    mprc:close(State#state.mprc),
     ok.
 
 %% @private

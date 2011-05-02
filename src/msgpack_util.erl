@@ -8,6 +8,7 @@
 -module(msgpack_util).
 
 -export([pppop/2, append_sup/1, append_srv/1]).
+-export([start/0, get_callid/0, insert/1, call_done/1, lookup/1, stop/0]).
 
 -spec pppop(Key::atom(), proplists:proplists())-> {Value::term(), List2::proplists:proplists()}|error.
 pppop(Key,List)->
@@ -30,3 +31,27 @@ append_srv(A)-> append_str(A, "_srv").
 append_str(A, Str)->
     L=atom_to_list(A),
     erlang:list_to_atom(L) ++ Str.
+
+-spec start()-> ok.
+start()->
+    ?MODULE=ets:new(?MODULE, [set,public,named_table]), ok.
+
+-spec stop()-> ok.
+stop()->
+    true=ets:delete(?MODULE), ok.
+
+get_callid()->
+    Cand = random:uniform(16#FFFFFFF),
+    case ets:insert_new(?MODULE, {Cand,Cand}) of
+	true -> Cand;
+	false -> get_callid()
+    end.
+
+insert(ResultTuple)->
+    true=ets:insert(?MODULE, ResultTuple), ok.
+
+call_done(CallID)->
+    true=ets:delete(?MODULE, CallID), ok.
+
+lookup(CallID)->
+    ets:lookup(?MODULE, CallID).

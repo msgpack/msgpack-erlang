@@ -15,33 +15,6 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 
-%%%-------------------------------------------------------------------
-%%% @author UENISHI Kota <kuenishi@gmail.com>
-%%% @copyright (C) 2010, UENISHI Kota
-%%% @doc
-%%   mp_client is a client interface to access messagepack server.
-%%   in erlang way, this is just a OTP worker. You can set your
-%%   code into your OTP supervision tree like a gen_server.
-%%
-%%   current status
-%%     only TCP works, now rewriting as to work also UDP works.
-%%
-%%  <code>
-%%  sample()->
-%%  %just as a syntax sugar for start_link
-%%  %YourModule defines receiver-callback when notification came from server.
-%%   {ok, Pid}=mp_client:connect(Identifier, YourModule, [Address, Port], [tcp]),
-%%   mp_client:call(Identifier, somemethod, [1,2]), % returns {ok, 3}
-%%   mp_client:call_async(Identifier, somemethod, [1,2]),
-%%   receive
-%%       {ok, Answer} -> ok;% maybe 3
-%%       _ -> error
-%%   after 1024 -> timeout end
-%%   mp_client:close(Pid).
-%%  </code>
-%%% @end
-%%% Created : 26 Aug 2010 by UENISHI Kota <kuenishi@gmail.com>
-%%%-------------------------------------------------------------------
 -module(gen_msgpack_rpc_test).
 
 -ifdef(TEST).
