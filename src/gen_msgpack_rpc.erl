@@ -49,8 +49,7 @@
 -export([start_link/5, stop/1, behaviour_info/1]).
 
 -export([call/3,
-	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2,
-	 watch/2, watch/3
+	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2
 	]).
 
 %% internal: gen_server callbacks
@@ -117,15 +116,6 @@ cancel_async_call(CallID)-> cancel_async_call(?SERVER, CallID).
 -spec cancel_async_call(Client::server_ref(), CallID::non_neg_integer())->ok.
 cancel_async_call(Client, CallID)->
     gen_server:call(Client, {cancel, CallID}).
-
-% set a callback for notification from server.
--spec watch(Method::atom(), Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
-watch(Method, Callback) ->   watch(?SERVER, Method, Callback).
-
--spec watch(Client::server_ref(), Method::atom(),
-	    Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
-watch(Client, Method, Callback) when is_atom(Method), is_function(Callback,2)->
-    gen_server:call(Client, {watch, Method, Callback}).
 
 %%====================================================================
 %% gen_server callbacks
