@@ -1,0 +1,5 @@
+open build/C
+
+DefineCommandVars()
+
+.SUBDIRS: .
