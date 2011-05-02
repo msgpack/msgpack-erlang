@@ -95,3 +95,24 @@ easy2_test()->
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
+
+
+conn_test()->
+    {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
+    ?assert(is_pid(Pid)),
+
+    ok = mprc:start(),
+    Arr = lists:seq(1,200), % we need more
+    MPRCs = lists:map(fun(_)-> {ok,S} = mprc:connect(localhost,9199,[]), S end, Arr),
+
+    lists:map(fun(MPRC)->
+		      {Ret,_MPRC0} = mprc:call(MPRC, add, [234, -34]),
+		      ?assertEqual(200, Ret)
+	      end, MPRCs),
+
+    lists:map(fun(MPRC)-> ?assertEqual(ok, mprc:close(MPRC)) end, MPRCs),
+    ok = mprc:stop(),
+
+    ?assertEqual(ok,gen_server:call(Pid,stop)),
+    ok.
+    
