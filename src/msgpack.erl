@@ -350,4 +350,13 @@ error_test()->
     Term = {"hoge", "hage", atom},
     ?assertEqual({error,{badarg, Term}}, msgpack:pack(Term)).
 
+long_binary_test()->
+    A = msgpack:pack(1),
+    B = msgpack:pack(10),
+    C = msgpack:pack(100),
+    {1, Rem0} = msgpack:unpack(<<A/binary, B/binary, C/binary>>),
+    {10, Rem1} = msgpack:unpack(Rem0),
+    {100, _Rem2} = msgpack:unpack(Rem1),
+    ok.
+
 -endif.

@@ -148,7 +148,6 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
         %% supervisor.
 	{ok,Pid}=gen_msgpack_rpc_srv:start_link(Mod,CliSocket),
 %	{ok,Pid}=proc_lib:start_link(Mod, start_link, [CliSocket]),
-
         ok=gen_tcp:controlling_process(CliSocket, Pid),
 
         %% Signal the network driver that we are ready to accept another connection
@@ -164,12 +163,11 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
     end;
 
 handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, acceptor=Ref} = State) ->
-    ?debugVal(hoege),
     error_logger:error_msg("Error in socket acceptor: ~p.\n", [Error]),
     {stop, Error, State};
 
 handle_info({'EXIT', _Pid, normal}, State) ->
-    ?debugVal(hoege),
+    error_logger:error_report({?MODULE, ?LINE, {State}}),
     {noreply, State};
 handle_info({'EXIT', _Pid, Reason}, State) ->
     %% If there was an unexpected error accepting, log and sleep.
