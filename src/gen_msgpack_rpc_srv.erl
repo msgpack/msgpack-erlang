@@ -118,35 +118,9 @@ handle_cast(Msg, #state{context=Context,module=Module}=State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({tcp, Socket, Bin}, #state{socket=Socket,module=Module,context=Context,carry=Carry} = State) ->
+handle_info({tcp, Socket, Bin}, #state{socket=Socket,carry=Carry} = State) ->
     NewBin = <<Carry/binary, Bin/binary>>,
-%    try
-	case msgpack:unpack(NewBin) of
-	    {[Req,CallID,M,Argv], Remain} ->
-		case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
-		    {ok, NextContext}->
-			% Flow control: enable forwarding of next TCP message
-			ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
-			{noreply, State#state{context=NextContext, carry=Remain}};
-		    {stop, Reason}->
-			{stop, Reason};
-		    _Other->
-			error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other]),
-			{noreply, State}
-		end;
-	    {error, incomplete} -> % carry over
-		{noreply, State#state{carry=NewBin}};
-	    {error, Reason} ->
-		{stop, Reason, State}
-    %% 	end
-    %% catch
-    %% 	_:{badmatch, X}->
-    %% 	    error_logger:error_msg("badmatch, bad binary ~p from ~p~n", [X, inet:peername(Socket)]),
-    %% 	    {noreply, State};
-    %% 	_:What ->
-    %% 	    error_logger:error_msg("failed: ~p~n", [What]),
-    %% 	    {noreply, State}
-    end;
+    process_binary(State#state{carry=NewBin});
 
 handle_info({tcp_closed, Socket}, #state{socket=Socket} = State) ->
 %    error_logger:debug_msg("~p Client ~p disconnected.\n", [self(), hoge]),
@@ -179,6 +153,30 @@ code_change(OldVsn, #state{module=Module, context=Context} = State, Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+
+process_binary(#state{socket=Socket, module=Module, context=Context, carry=Bin} = State)->
+    case msgpack:unpack(Bin) of
+	{[Req,CallID,M,Argv], Remain} ->
+	    case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
+		{ok, NextContext}->
+			% Flow control: enable forwarding of next TCP message
+		    %erlang:display(Argv),
+		    %erlang:display(Remain),
+		    process_binary(State#state{context=NextContext, carry=Remain});
+		{stop, Reason}->
+		    {stop, Reason};
+		_Other->
+		    error_logger:error_msg("failed unpack: ~p  result: ~p~n", [Bin, _Other]),
+		    {noreply, State}
+	    end;
+	{error, incomplete} -> % carry over
+	    ok=inet:setopts(Socket, [{active,once}]),
+	    {noreply, State};
+	{error, Reason} ->
+	    error_logger:error_msg("error: ~p~n", [Reason]),
+	    {stop, Reason, State}
+    end.
+    
 
 handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when is_integer(CallID), is_binary(M) ->
     try
