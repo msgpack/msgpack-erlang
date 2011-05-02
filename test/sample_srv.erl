@@ -56,6 +56,10 @@ easy_test()->
 
     ?assertEqual("hello, msgpack!", mprc:call(S, hello, [])),
     ?assertEqual(234, mprc:call(S, add, [230,4])),
+    A=2937845, B=238945-29038453490, C=A+B,
+    ?assertEqual(C, mprc:call(S, add, [A,B])),
+% TODO: make it exception thrown
+%    ?assertEqual(234, mprc:call(S, addo, [230,0])),
     
     ?assertEqual(ok, mprc:close(S)),
     ok = mprc:stop(),
