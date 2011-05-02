@@ -46,10 +46,9 @@
 -define(SERVER, ?MODULE).
 
 %% external API
--export([start_link/2, start_link/3]).
+-export([start_link/4, stop/1]).
 
--export([connect/2, connect/3, close/0, close/1,
-	 call/3, call/4,
+-export([call/3, call/4,
 	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2,
 	 watch/2, watch/3
 	]).
@@ -63,21 +62,15 @@
 %%====================================================================
 %% API
 %%====================================================================
--spec start_link(Address::address(), Port::(0..65535))-> {ok, pid()}.
-start_link(A,P) -> connect(A,P).
-
--spec start_link(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
-start_link(I,A,P) -> connect(I,A,P).
-
--spec connect(Address::address(), Port::(0..65535))-> {ok, pid()}.
-connect(Address, Port)->
-    gen_server:start_link({local,?SERVER}, ?MODULE, [{address,Address},{port,Port}], []).
+-spec start_link(Identifier::term(),  Address::address(), Port::(0..65535), [term()]) ->  {ok, pid()}.
+start_link(I,A,P, Options) -> 
+    MPRC=mprc:connect(A,P, Options),
+    gen_server:start_link(I, gen_msgpack_rpc, init, [MPRC,Options]).
 % for debug			  [{debug,[trace,log,statistics]}]).
 
-% users can set any identifier to the connection
--spec connect(Identifier::server_name(),  Address::address(), Port::(0..65535)) ->  {ok, pid()}.
-connect(Identifier, Address, Port)->
-    gen_server:start_link(Identifier, ?MODULE, [{address,Address},{port,Port}], []).
+-spec stop(Identifier::term()) -> ok.
+stop(Id)->
+    gen_server:call(Id, stop).
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
@@ -134,14 +127,6 @@ watch(Method, Callback) ->   watch(?SERVER, Method, Callback).
 	    Callback::fun( (atom(),list()) -> any() )) -> ok | {error, any()}.
 watch(Client, Method, Callback) when is_atom(Method), is_function(Callback,2)->
     gen_server:call(Client, {watch, Method, Callback}).
-
-% users can set any identifier to the connection
--spec close(Identifier::server_name())-> any().
-close(Identifier)->  gen_server:call(Identifier, stop).
-
--spec close() -> any().		    
-close()-> close(?SERVER).
-
 
 %%====================================================================
 %% gen_server callbacks
