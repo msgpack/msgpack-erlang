@@ -166,9 +166,21 @@ handle_cast(_Msg, State) ->
 %%                                       {stop, Reason, State}
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
-handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
+handle_info({tcp, _Socket, Pack}, #state{mprc=MPRC}=State)->
     Bin = <<(MPRC#mprc.carry)/binary, Pack/binary>>,
+    NewMPRC = MPRC#mprc{carry = <<>>},
+    decode_all(Bin, State#state{mprc=NewMPRC});
+
+handle_info(_Info, State) ->
+    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Info]),
+    {noreply, State}.
+
+decode_all(<<>>, #state{mprc=MPRC}=State)->
+    ok = mprc:active_once(MPRC),
+    {noreply, State};
+decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
     case msgpack:unpack(Bin) of
+
 	{[?MP_TYPE_NOTIFICATION,Method,Params],RemBin}->
 	    % maybe we need string whitelist for atom-attack
 	    Meth = binary_to_atom(Method, latin1),
@@ -177,51 +189,47 @@ handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
 	    catch _:_Other ->
 		    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
 	    end,
-	    NewMPRC = MPRC#mprc{carry = RemBin},
-	    ok = mprc:active_once(MPRC),
-	    {noreply, State#state{mprc=NewMPRC}};
+	    decode_all(RemBin, State);
+
 	{[?MP_TYPE_RESPONSE,CallID,ResCode,Result],RemBin} ->
 	    case msgpack_util:lookup(CallID) of
-		[]->
-		    ok = mprc:active_once(MPRC),
-		    {noreply, State#state{mprc=mprc:append_binary(MPRC,RemBin)}};
 
 		% /* needs refactor, just reply => reply, send => !
-		[{CallID,{reply,From}}|_] ->
+		[{CallID,{reply,From}}|_] -> % sync call
 		    msgpack_util:call_done(CallID),
-		    case ResCode of
-			nil ->   gen_server:reply(From, Result);
-			Error -> gen_server:reply(From, {Error,Result})
+		    case {ResCode, Result} of
+			{nil, Result} ->   gen_server:reply(From, {ok,Result});
+			{Error, nil}  ->   gen_server:reply(From, {error,Error});
+			_Other -> 
+			    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
 		    end,
-		    NewMPRC = MPRC#mprc{carry = RemBin},
-		    ok = mprc:active_once(MPRC),
-		    {noreply, State#state{mprc=NewMPRC}};
-		[{CallID,{send,From}}|_] ->
+		    decode_all(RemBin, State);
+
+		[{CallID,{send,From}}|_] -> % async_call
 		    msgpack_util:call_done(CallID),
-		    case ResCode of
-			nil ->   From ! {CallID, Result};
-			Error -> From ! {CallID, {Error,Result}}
+		    case {ResCode, Result} of
+			{nil,Result} -> From ! {CallID, {ok,Result}};
+			{Error,nil}  -> From ! {CallID, {error,Error}};
+			_Other -> 
+			    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
 		    end,
-		    NewMPRC = MPRC#mprc{carry = RemBin},
-		    ok = mprc:active_once(MPRC),
-		    {noreply, State#state{mprc=NewMPRC}};
+		    decode_all(RemBin, State);
 		% */ needs refactor end
 		
 		_Other ->		% Error
 		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other]),
 		    ok = mprc:active_once(MPRC),
-		    {noreply, State}
+		    {noreply, State#state{mprc=mprc:append_binary(MPRC,Bin)}}
 	    end;
 	{error, incomplete} ->
 	    ok = mprc:active_once(MPRC),
-	    {noreply, State#state{mprc=mprc:append_binary(MPRC,Pack)}};
+	    {noreply, State#state{mprc=mprc:append_binary(MPRC,Bin)}};
 	{error, _Reason} ->
+	    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Reason]),
 	    ok = mprc:active_once(MPRC),
-	    {noreply, State}
-    end;
-
-handle_info(_Info, State) ->
-    {noreply, State}.
+	    {noreply, State#state{mprc=mprc:append_binary(MPRC,Bin)}}
+    end.
+    
 
 %% @private
 %% Function: terminate(Reason, State) -> void()

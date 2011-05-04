@@ -95,14 +95,16 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 		{[?MP_TYPE_RESPONSE, CallID, Error, Retval], RemainBin}->
 		    MPRC0 = MPRC#mprc{carry=RemainBin},
 		    msgpack_util:call_done(CallID),
-		    case Error of
-			nil ->
+		    case {Error, Retval} of
+			{nil, Retval} ->
 						%?debugVal(Retval),
 						%?debugVal(Remain),
 						%?debugVal(ets:tab2list(?MODULE)),
-			    join_(MPRC0, Remain, [Retval|Got]);
-			_Other -> 
-			    join_(MPRC0, Remain, [{error, {Error,Retval}}|Got])
+			    join_(MPRC0, Remain, [{ok,Retval}|Got]);
+			{Error,nil} ->
+			    join_(MPRC0, Remain, [{error,Error}|Got]);
+			_Other -> % malformed message
+			    throw({malform_msg, _Other})
 		    end;
 		{[?MP_TYPE_RESPONSE, CallID0, Error, Retval], RemainBin}->
 		    msgpack_util:insert({CallID0, Error, Retval}),
@@ -117,11 +119,16 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 	    end;
 	[{CallID,Error,Retval}|_] ->
 	    msgpack_util:call_done(CallID),
-	    case Error of
-		nil ->
-		    join_(MPRC, Remain, [Retval|Got]);
-		_Other -> 
-		    join_(MPRC, Remain, [{error, {Error,Retval}}|Got])
+	    case {Error, Retval} of
+		{nil, Retval} ->
+						%?debugVal(Retval),
+						%?debugVal(Remain),
+						%?debugVal(ets:tab2list(?MODULE)),
+		    join_(MPRC, Remain, [{ok,Retval}|Got]);
+		{Error,nil} ->
+		    join_(MPRC, Remain, [{error,Error}|Got]);
+		_Other -> % malformed message
+		    throw({malform_msg, _Other})
 	    end
     end;
 join_(MPRC, Remain, Got) ->

@@ -46,12 +46,12 @@ easy_test()->
 
     {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
     
-    ?assertEqual(3, gen_msgpack_rpc:call(Pid2, add, [1, 2])),
-    ?assertEqual(3, gen_msgpack_rpc:call(?MODULE, add, [1, 2])),
+    ?assertEqual({ok,3}, gen_msgpack_rpc:call(Pid2, add, [1, 2])),
+    ?assertEqual({ok,3}, gen_msgpack_rpc:call(?MODULE, add, [1, 2])),
 
     {ok, CallID} = gen_msgpack_rpc:call_async(Pid2, add, [1,2]),
     receive
-	{CallID, 3} -> ok;
+	{CallID, {ok,3}} -> ok;
 	_ -> ?assert(false)
     end,
     
@@ -61,6 +61,15 @@ easy_test()->
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
+
+
+loop_receive(0, List)-> lists:keysort(1,List);
+loop_receive(N, List)->
+    receive
+	{CID, {ok,S}} ->
+	    loop_receive(N-1, [{CID,S}|List]);
+	_R -> ?debugVal(_R), ?assert(false), List
+    end.
 
 easy2_test()->
     {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
@@ -73,22 +82,22 @@ easy2_test()->
     Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
 	   {-2000, 2000}, {2000, -2000}, {234, -234}],
     lists:map( fun({L,R})->
-		       ?assertEqual(L+R, gen_msgpack_rpc:call(Pid2, add, [L,R]))
+		       ?assertEqual({ok,L+R}, gen_msgpack_rpc:call(Pid2, add, [L,R]))
 	       end, Pairs ),
-%%     {error, {<<"no such func">>,nil}}=mp_client:call(add, 890, no_such_func, []),
-%%     mp_client:close(add).
-    {ok, CallID} = gen_msgpack_rpc:call_async(Pid2, add, [1,2]),
-    receive
-	{CallID, 3} -> ok;
-	_ -> ?assert(false)
-    end,
-    
-    ok=gen_msgpack_rpc:stop(Pid2),
 
+    CallIDs = lists:map( fun({L,R})->
+				 {ok,CallID}=gen_msgpack_rpc:call_async(Pid2, add, [L,R]),
+				 {CallID, L+R}
+			 end, Pairs ),
+    Results = loop_receive(length(CallIDs), []),
+    ?assertEqual(lists:keysort(1,CallIDs), Results),
+
+    ?assertEqual({error, <<"no such func">>}, gen_msgpack_rpc:call(Pid2, addhage, [])),
+
+    ok=gen_msgpack_rpc:stop(Pid2),
     ok=mprc:stop(),
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
-%% case_add(_Config)->
 
 -endif.
