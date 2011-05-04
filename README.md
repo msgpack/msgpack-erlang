@@ -25,14 +25,16 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 
 ## TODO
 
-- rewrite tutorial and README
-- 
+- notification protocol
 - error handling 
 -- what if happens when badarg/noproc/bad_clause, and exceptions.
 -- check Msgpack-RPC spec of error handling
+- crosslang test
 - coverage 100%
 - UDP transport
 - UDS transport
 - SCTP/SSL/zip and more...
+- rewrite tutorial and README
 - release handling (/release/*.appup)
-- 
+- full-spec type/spec notation
+- longrun test
