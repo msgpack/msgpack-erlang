@@ -1,9 +1,0 @@
-.PHONY: all install clean
-
-beams=$(glob ebin/*.beam)
-erls=$(glob src/*.erl)
-
-.DEFAULT: $(beams)
-
-$(beams): $(erls)
-	make all
