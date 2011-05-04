@@ -97,9 +97,6 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 		    msgpack_util:call_done(CallID),
 		    case {Error, Retval} of
 			{nil, Retval} ->
-						%?debugVal(Retval),
-						%?debugVal(Remain),
-						%?debugVal(ets:tab2list(?MODULE)),
 			    join_(MPRC0, Remain, [{ok,Retval}|Got]);
 			{Error,nil} ->
 			    join_(MPRC0, Remain, [{error,Error}|Got]);
@@ -121,9 +118,6 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 	    msgpack_util:call_done(CallID),
 	    case {Error, Retval} of
 		{nil, Retval} ->
-						%?debugVal(Retval),
-						%?debugVal(Remain),
-						%?debugVal(ets:tab2list(?MODULE)),
 		    join_(MPRC, Remain, [{ok,Retval}|Got]);
 		{Error,nil} ->
 		    join_(MPRC, Remain, [{error,Error}|Got]);
@@ -132,7 +126,6 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 	    end
     end;
 join_(MPRC, Remain, Got) ->
-    %?debugVal(Remain), %?debugVal(MPRC),
     {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
     NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
     join_(MPRC#mprc{carry=NewBin}, Remain, Got).

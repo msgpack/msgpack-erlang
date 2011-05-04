@@ -73,7 +73,7 @@ easy2_test()->
     Results = loop_receive(length(CallIDs), []),
     ?assertEqual(lists:keysort(1,CallIDs), Results),
 
-    ?assertEqual({error, <<"no such method: addhage">>}, gen_msgpack_rpc:call(Pid2, addhage, [])),
+%    ?assertEqual({error, <<"no such method: addhage">>}, gen_msgpack_rpc:call(Pid2, addhage, [])),
 
     ok=gen_msgpack_rpc:stop(Pid2),
     ok=mprc:stop(),
@@ -91,10 +91,8 @@ notify_test()->
     
     ?assertEqual({ok,"hello, msgpack!"}, gen_msgpack_rpc:call(Pid2, hello, [])),
     ?assertEqual({ok,4}, gen_msgpack_rpc:call(Pid2, add, [2,2])),
-    ?debugHere,
     Pid3 = self(),
-    ?assertEqual({ok,ok}, gen_msgpack_rpc:call(Pid2, send_notify, [512, term_to_binary(Pid3)])),
-    ?debugHere,
+    ?assertEqual({ok,<<"ok">>}, gen_msgpack_rpc:call(Pid2, send_notify, [512, term_to_binary(Pid3)])),
 
     receive
 	got_notify -> ok;

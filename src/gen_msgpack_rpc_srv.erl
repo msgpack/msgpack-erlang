@@ -22,7 +22,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% API
--export([start_link/2, notify/2, behaviour_info/1]).
+-export([start_link/2, notify/3, behaviour_info/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -52,10 +52,10 @@ start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
     {ok,_Pid}=gen_server:start_link(?MODULE, [Module,Socket], []).
 
 % TODO/TBF
-notify(Method, Argv) when is_atom(Method) andalso is_list(Argv) ->
-    Pid = self(),
+notify(Id, Method, Argv) when is_atom(Method) andalso is_list(Argv) ->
     Meth = atom_to_binary(Method,latin1),
-    gen_server:cast(Pid, {notify, Meth, Argv}).
+    gen_server:cast(Id, {notify, Meth, Argv}). % don't know why it doesn't work => goes {error, einval}
+%    gen_server:call(Pid, {notify, Meth, Argv}).
 
 
 %%====================================================================
@@ -75,9 +75,9 @@ init([]) ->
 init([Module,Socket]) when is_atom(Module), is_port(Socket)->
     %[active, nodelay, keepalive, delay_send, priority, tos]) of
 
-    ok=inet:setopts(Socket, [{active,once},{packet,raw}]),
     case Module:init([]) of
 	{ok, Context}->
+	    ok=inet:setopts(Socket, [{active,once},{packet,raw},binary]),
 	    {ok, #state{module=Module, socket=Socket, context=Context}};
 	Error ->
 	    {stop, Error}
@@ -110,11 +110,15 @@ handle_call(Request, From, #state{context=Context,module=Module}=State) ->
 %%--------------------------------------------------------------------
 
 handle_cast({notify, Method, Argv}, #state{socket=Socket}=State) ->
-    Msg = [?MP_TYPE_NOTIFICATION, Method, Argv],
-    ?debugVal(Msg),
-    ?debugVal(msgpack:pack(Msg)),
-    ?debugVal(Socket),
-    ok=gen_tcp:send(Socket,msgpack:pack(Msg)),
+    %% Pid = self(),
+    %% ok=gen_tcp:controlling_process(Socket,Pid),
+    %% inet:setopts(Socket,[binary,raw,{active,false}]),
+    case msgpack:pack([?MP_TYPE_NOTIFICATION, Method, Argv]) of
+	Msg when is_binary(Msg) ->
+	    gen_tcp:send(Socket, Msg);
+	_Error ->
+	    error_logger:info_msg("~s:~p ~p .\n", [?FILE, ?LINE,_Error])
+    end,
     {noreply, State};
 
 handle_cast(Msg, State)->
@@ -168,9 +172,7 @@ process_binary(#state{socket=Socket, module=Module, context=Context, carry=Bin} 
 	{[Req,CallID,M,Argv], Remain} ->
 	    case handle_request(Req,CallID,Module,M,Argv,Socket,Context) of
 		{ok, NextContext}->
-			% Flow control: enable forwarding of next TCP message
-		    %erlang:display(Argv),
-		    %erlang:display(Remain),
+		% Flow control: enable forwarding of next TCP message
 		    process_binary(State#state{context=NextContext, carry=Remain});
 		{stop, Reason}->
 		    {stop, Reason};
@@ -191,10 +193,14 @@ handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when i
     try
 	Method = binary_to_atom(M, latin1),
 	Prefix = [?MP_TYPE_RESPONSE, CallID],
-	erlang:display({Module,Method,Argv}),
 	Spam = erlang:apply(Module,Method,Argv),
 	case Spam of
-	    {reply, Result}->
+	    {reply, Result} when is_atom(Result) ->
+		ReplyBin = msgpack:pack(Prefix++[nil, atom_to_binary(Result,latin1)]),
+%		?debugVal(ReplyBin),
+		ok=gen_tcp:send(Socket,ReplyBin),
+		{ok, Context};
+	    {reply, Result} ->
 		ReplyBin = msgpack:pack(Prefix++[nil, Result]),
 		ok=gen_tcp:send(Socket,ReplyBin),
 		{ok, Context};
@@ -219,7 +225,8 @@ handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when i
 	    {ok, Context};
 
 	_:What ->
+	    Msg = [?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil],
 	    error_logger:error_msg("unknown error: ~p (~p:~s/~p)~n", [What, Module,binary_to_list(M),length(Argv)]),
-	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil])),
+	    ok=gen_tcp:send(Socket, msgpack:pack(Msg)),
 	    {ok, Context}
     end.

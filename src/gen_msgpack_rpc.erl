@@ -186,8 +186,12 @@ decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
 	    Meth = binary_to_atom(Method, latin1),
 	    try
 		_Ret=erlang:apply(Mod,Meth,Params)
-	    catch _:_Other ->
-		    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
+	    catch 
+		_:undef ->
+		    error_logger:error_msg("~s:~p unknown method: ~s:~s/~p~n",
+					   [?FILE, ?LINE, Mod,Meth,length(Params)]);
+		_:_Other ->
+		    error_logger:error_msg("error ~s:~p ~p~n", [?FILE, ?LINE, _Other])
 	    end,
 	    decode_all(RemBin, State);
 
