@@ -155,8 +155,8 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
 	    {ok,    NewRef} -> ok;
 	    {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
         end,
-
         {noreply, State#state{acceptor=NewRef}}
+
     catch exit:Why ->
         error_logger:error_msg("Error in async accept: ~p.\n", [Why]),
         {stop, Why, State}

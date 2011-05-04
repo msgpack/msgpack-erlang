@@ -42,8 +42,16 @@ easy_test()->
     {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
     ?assert(is_pid(Pid)),
 
+    ok=mprc:start(),
+
     {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
+    
+    ?assertEqual(3, gen_msgpack_rpc:call(Pid2, add, [1, 2])),
+    ?assertEqual(3, gen_msgpack_rpc:call(?MODULE, add, [1, 2])),
+    
     ok=gen_msgpack_rpc:stop(Pid2),
+
+    ok=mprc:stop(),
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.

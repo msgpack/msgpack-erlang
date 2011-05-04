@@ -26,6 +26,9 @@
 
 -type transport() :: tcp | udp. % sctp | snappy | zip | etc...
 
+-record(mprc, { s :: inet:socket(), carry = <<>> :: binary() }).
+-type mprc() :: #mprc{}.
+
 -type server_name() :: {local, name()} | {global, global_name()}.
 -type server_ref() :: pid() | name() | { name(), node() } | {global, global_name()}.
  

@@ -42,10 +42,6 @@
 	 connect/3, close/1, call/3, call_async/3, join/2,
 	 controlling_process/2, active_once/1, append_binary/2]).
 
--record(mprc, { s :: inet:socket(), carry = <<>> :: binary() }).
-
--type mprc() :: #mprc{}.
-
 %%====================================================================
 %% API
 %%====================================================================

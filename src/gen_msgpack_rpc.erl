@@ -79,6 +79,7 @@ start_link(I,M,A,P,Options) ->
 % for debug			  [{debug,[trace,log,statistics]}]).
 	{ok, Pid} ->
 	    ok=mprc:controlling_process(MPRC, Pid),
+	    ok=mprc:active_once(MPRC),
 	    {ok, Pid};
 	{error, Reason} ->
 	    mprc:close(MPRC),
@@ -96,7 +97,7 @@ stop(Id)->
 -spec call(Id::term(), Method::atom(), Argv::list()) -> 
     {ok, any()} | {error, {atom(), any()}}.
 call(Id, Method, Argv) ->
-    gen_server:call(Id, {call_async, Method, Argv}, 0).
+    gen_server:call(Id, {call, Method, Argv}, infinity).
 
 % TODO: write test code for call_async/3
 % afterwards, the caller will receive the response {ok, ResCode, Result} as a message
@@ -149,9 +150,9 @@ init([Mod, MPRC, _Options])->
 %% Description: Handling call messages
 %%--------------------------------------------------------------------
 handle_call({call, Method, Argv}, From, #state{mprc=MPRC} = State)->
-    CallID = mprc:call_async(MPRC, Method, Argv),
+    {ok, CallID} = mprc:call_async(MPRC, Method, Argv),
     msgpack_util:insert({CallID,From}),
-    {reply, {ok, CallID}, State};
+    {noreply, State};
 
 handle_call(stop, _From, State)->
     {stop, normal, ok, State};
@@ -175,17 +176,19 @@ handle_cast(_Msg, State) ->
 %% Description: Handling all non call/cast messages
 %%--------------------------------------------------------------------
 handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
-    case msgpack:unpack(Pack) of
-	{[?MP_TYPE_NOTIFICATION,Method,Params],_RemBin}->
-	    % maybe we need string whilelist for atom-attack
+    Bin = <<(MPRC#mprc.carry)/binary, Pack/binary>>,
+    case msgpack:unpack(Bin) of
+	{[?MP_TYPE_NOTIFICATION,Method,Params],RemBin}->
+	    % maybe we need string whitelist for atom-attack
 	    Meth = binary_to_atom(Method, latin1),
 	    try
 		_Ret=erlang:apply(Mod,Meth,Params)
 	    catch _:_Other ->
 		    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
 	    end,
-
-	    {noreply, State};
+	    NewMPRC = MPRC#mprc{carry = RemBin},
+	    ok = mprc:active_once(MPRC),
+	    {noreply, State#state{mprc=NewMPRC}};
 	{[?MP_TYPE_RESPONSE,CallID,ResCode,Result],RemBin} ->
 	    case msgpack_util:lookup(CallID) of
 		[]->
@@ -194,11 +197,12 @@ handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
 		[{CallID,From}|_] ->
 		    msgpack_util:call_done(CallID),
 		    case ResCode of
-			nil -> gen_server:reply(From, Result);
+			nil ->   gen_server:reply(From, Result);
 			Error -> gen_server:reply(From, {Error,Result})
 		    end,
+		    NewMPRC = MPRC#mprc{carry = RemBin},
 		    ok = mprc:active_once(MPRC),
-		    {noreply, State#state{mprc=mprc:append_binary(MPRC,RemBin)}};
+		    {noreply, State#state{mprc=NewMPRC}};
 		_Other ->		% Error
 		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other]),
 		    ok = mprc:active_once(MPRC),
