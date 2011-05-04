@@ -29,8 +29,8 @@ add(I, J) when is_integer(I) andalso is_integer(J)->
     {reply, I+J}.
 
 send_notify(Num,BinPid) when is_integer(Num) andalso Num > 0 andalso is_binary(BinPid) ->
-    ?debugVal(binary_to_term(BinPid)),
-    gen_msgpack_rpc_srv:notify(get_notify, [BinPid]),
+    Pid = self(),
+    gen_msgpack_rpc_srv:notify(Pid, got_notify, [BinPid]),
     {reply, ok}.
 
 handle_call(_Request, _From, State)->
