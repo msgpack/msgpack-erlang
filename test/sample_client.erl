@@ -1,57 +1,41 @@
-%%%-------------------------------------------------------------------
-%%% File    : sample_client.erl
-%%% Description : 
-%%% @hidden
-%%% Created :  5 Jun 2010 by UENISHI Kota <kuenishi@gmail.com>
-%%%-------------------------------------------------------------------
+%%
+%% MessagePack for Erlang
+%%
+%% Copyright (C) 2010 UENISHI Kota
+%%
+%%    Licensed under the Apache License, Version 2.0 (the "License");
+%%    you may not use this file except in compliance with the License.
+%%    You may obtain a copy of the License at
+%%
+%%        http://www.apache.org/licenses/LICENSE-2.0
+%%
+%%    Unless required by applicable law or agreed to in writing, software
+%%    distributed under the License is distributed on an "AS IS" BASIS,
+%%    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+%%    See the License for the specific language governing permissions and
+%%    limitations under the License.
+
 -module(sample_client).
 
--include_lib("eunit/include/eunit.hrl").
+-behaviour(gen_msgpack_rpc).
 
-%-behaviour(gen_msgpack_rpc).
-%-compile(export_all).
+-export([init/1, handle_call/3, terminate/2, code_change/3]).
+-export([got_notify/1]).
 
-%% -record(state, {}).
+-record(state, {}).
 
-%% init(_Argv)->
-%%     {ok, #state{}}.
+got_notify(BinPid)->
+    Pid = binary_to_term(BinPid),
+    Pid ! got_notify.
 
-%% hello()->
-%%     {"hello, msgpack!"}.
+init(_)->
+    {ok, #state{}}.
 
-%% sub(I, J) when is_integer(I) andalso is_integer(J)->
-%% 						%?debugVal({I,J}),
-%%     {I+J}.
+handle_call(_Msg,_From,State)->
+    {noreply, State}.
 
-%% handle_call(_Request, _From, State)->
-%%     Reply=ok,
-%%     {reply, Reply, State}.
+terminate(_Reason,_State)->
+    ok.
 
-%% terminate(_Reason, State)->
-%%     {ok, State}.
-
-%% code_change(_OldVsn, State, _Extra) ->
-%%     {ok, State}.
-
-%% loop(_,  0) -> ok;
-%% loop(Fun,N) ->
-%%     Fun(N),
-%%     loop(Fun,N-1).
-
-%% load(P)->
-%%     ok = sample_app:start(),
-%%     {ok, _Pid} = mp_client:connect(localhost,65500),
-%%     ReqFun = fun(N)-> {ok, _} = mp_client:call(N, hello, []) end,
-%%     loop(ReqFun, P),
-%%     ok = mp_client:close(),
-%%     ok = sample_app:stop().
-
-%% easy_test()->
-%%     {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
-%%     ?assert(is_pid(Pid)),
-    
-    
-
-%%     ?assertEqual(ok,gen_server:call(Pid,stop)),
-%%     ok.
-
+code_change(_,State,_)->
+    {ok,State}.

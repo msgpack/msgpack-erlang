@@ -17,30 +17,6 @@
 
 -module(gen_msgpack_rpc_test).
 
--behaviour(gen_msgpack_rpc).
-
--export([init/1, handle_call/3, terminate/2, code_change/3]).
--export([got_notify/1]).
-
--record(state, {}).
-
-got_notify(BinPid)->
-    Pid = binary_to_term(BinPid),
-    Pid ! got_notify.
-
-init(_)->
-    {ok, #state{}}.
-
-handle_call(_Msg,_From,State)->
-    {noreply, State}.
-
-terminate(_Reason,_State)->
-    ok.
-
-code_change(_,State,_)->
-    {ok,State}.
-
--ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
 easy_test()->
@@ -82,7 +58,7 @@ easy2_test()->
 
     ok=mprc:start(),
 
-    {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
+    {ok, Pid2}=gen_msgpack_rpc:start_link({local,sample_client},sample_client,localhost,9199,[tcp]),
     
     Pairs=[{5,5}, {0,0}, {234, 2}, {213456789, -3}, {234, -23}, {-1,1}, {1,-1}, {-1,-1},
 	   {-2000, 2000}, {2000, -2000}, {234, -234}],
@@ -111,7 +87,7 @@ notify_test()->
 
     ok=mprc:start(),
 
-    {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
+    {ok, Pid2}=gen_msgpack_rpc:start_link({local,sample_client},sample_client,localhost,9199,[tcp]),
     
     ?assertEqual({ok,"hello, msgpack!"}, gen_msgpack_rpc:call(Pid2, hello, [])),
     ?assertEqual({ok,4}, gen_msgpack_rpc:call(Pid2, add, [2,2])),
@@ -130,6 +106,4 @@ notify_test()->
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
-    
 
--endif.
