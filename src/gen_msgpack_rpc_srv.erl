@@ -52,9 +52,10 @@ start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
     {ok,_Pid}=gen_server:start_link(?MODULE, [Module,Socket], []).
 
 % TODO/TBF
-notify(Method, Argv)->
+notify(Method, Argv) when is_atom(Method) andalso is_list(Argv) ->
     Pid = self(),
-    gen_server:handle_cast(Pid, {notify, Method, Argv}).
+    Meth = atom_to_binary(Method,latin1),
+    gen_server:cast(Pid, {notify, Meth, Argv}).
 
 
 %%====================================================================

@@ -72,7 +72,7 @@ call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
 
 call_async(MPRC,Method,Argv)->
     CallID = msgpack_util:get_callid(),
-    Meth = <<(atom_to_binary(Method,latin1))/binary>>,
+    Meth = atom_to_binary(Method,latin1),
     case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
 	{error, Reason}->
 	    {error, Reason};
