@@ -17,8 +17,36 @@
 
 -module(gen_msgpack_rpc_test).
 
+-behaviour(gen_msgpack_rpc).
+
+-export([init/1, handle_call/3, terminate/2, code_change/3]).
+
+-record(state, {}).
+
+init(_)->
+    {ok, #state{}}.
+
+handle_call(_Msg,_From,State)->
+    {noreply, State}.
+
+terminate(_Reason,_State)->
+    ok.
+
+code_change(_,State,_)->
+    {ok,State}.
+
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
+
+easy_test()->
+    {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
+    ?assert(is_pid(Pid)),
+
+    {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
+    ok=gen_msgpack_rpc:stop(Pid2),
+
+    ?assertEqual(ok,gen_server:call(Pid,stop)),
+    ok.
 
 %% my_first_case(_Config) ->
 %%     {ok, _Pid}=mp_client:connect(localhost,65500),

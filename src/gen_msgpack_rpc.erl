@@ -73,9 +73,16 @@ behaviour_info(_Other) ->
 -spec start_link(Identifier::term(), Module::atom(),
 		 Address::address(), Port::(0..65535), [term()]) ->  {ok, pid()}.
 start_link(I,M,A,P,Options) -> 
-    MPRC=mprc:connect(A,P,Options),
-    gen_server:start_link(I, gen_msgpack_rpc, [M,MPRC,Options]).
+    {ok,MPRC}=mprc:connect(A,P,Options), % needs {active, false}
+    case gen_server:start_link(I, ?MODULE, [M,MPRC,Options], []) of
 % for debug			  [{debug,[trace,log,statistics]}]).
+	{ok, Pid} ->
+	    ok=mprc:controlling_process(MPRC, Pid),
+	    {ok, Pid};
+	{error, Reason} ->
+	    mprc:close(MPRC),
+	    {error, Reason}
+    end.
 
 -spec stop(Identifier::term()) -> ok.
 stop(Id)->
@@ -129,7 +136,6 @@ cancel_async_call(Client, CallID)->
 %% Description: Initiates the server
 %%--------------------------------------------------------------------
 init([Mod, MPRC, _Options])->
-    ok=mprc:controlling_process(MPRC),
     {ok, #state{module=Mod, mprc = MPRC}}.
 
 %% @private
