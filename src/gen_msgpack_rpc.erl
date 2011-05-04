@@ -49,9 +49,7 @@
 %% external API
 -export([start_link/5, stop/1, behaviour_info/1]).
 
--export([call/3,
-	 call_async/3, call_async/4, cancel_async_call/1, cancel_async_call/2
-	]).
+-export([call/3, call_async/3]).
 
 %% internal: gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -99,32 +97,20 @@ stop(Id)->
 call(Id, Method, Argv) ->
     gen_server:call(Id, {call, Method, Argv}, infinity).
 
-% TODO: write test code for call_async/3
-% afterwards, the caller will receive the response {ok, ResCode, Result} as a message
--spec call_async(CallID::non_neg_integer(),
-		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
-call_async(CallID, Method, Argv)->
-    call_async(?SERVER, CallID, Method, Argv).
-
--spec call_async(Client::server_ref(), CallID::non_neg_integer(),
-		 Method::atom(), Argv::list()) -> ok | {error, {atom(), any()}}.
-call_async(Client, CallID, Method, Argv) when is_atom(Method), is_list(Argv)->
-    Meth = <<(atom_to_binary(Method,latin1))/binary>>,
+% @doc
+%  the caller will receive the response {CallID, Result} as a message
+%  {ok, CallID} = gen_msgpack_rpc:call(Pid, add, [1,2]),
+%  receive
+%    {CallID, Result} -> do_sth
+%  after 1024 ->
+%    timeout
+%  end,
+%
+-spec call_async(Id::term(), Method::atom(), Argv::list()) -> {ok, CallID::non_neg_integer()}.
+call_async(Id, Method, Argv)->
     Pid = self(),
-    case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
-	{error, Reason}->
-	    {error, Reason};
-	Pack ->
-	    ok=gen_server:call(Client, {call, {CallID, Pid} ,Pack})
-    end.
-
-% TODO: write test code for cancellation
--spec cancel_async_call(CallID::non_neg_integer())->ok.
-cancel_async_call(CallID)-> cancel_async_call(?SERVER, CallID).
-
--spec cancel_async_call(Client::server_ref(), CallID::non_neg_integer())->ok.
-cancel_async_call(Client, CallID)->
-    gen_server:call(Client, {cancel, CallID}).
+    {ok,CallID}=gen_server:call(Id, {call_async, Method, Argv, Pid}, infinity),
+    {ok,CallID}.
 
 %%====================================================================
 %% gen_server callbacks
@@ -151,8 +137,13 @@ init([Mod, MPRC, _Options])->
 %%--------------------------------------------------------------------
 handle_call({call, Method, Argv}, From, #state{mprc=MPRC} = State)->
     {ok, CallID} = mprc:call_async(MPRC, Method, Argv),
-    msgpack_util:insert({CallID,From}),
+    msgpack_util:insert({CallID,{reply,From}}),
     {noreply, State};
+
+handle_call({call_async, Method, Argv, Pid}, _From, #state{mprc=MPRC} = State)->
+    {ok, CallID} = mprc:call_async(MPRC, Method, Argv),
+    msgpack_util:insert({CallID,{send,Pid}}),
+    {reply, {ok, CallID}, State};
 
 handle_call(stop, _From, State)->
     {stop, normal, ok, State};
@@ -194,7 +185,9 @@ handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
 		[]->
 		    ok = mprc:active_once(MPRC),
 		    {noreply, State#state{mprc=mprc:append_binary(MPRC,RemBin)}};
-		[{CallID,From}|_] ->
+
+		% /* needs refactor, just reply => reply, send => !
+		[{CallID,{reply,From}}|_] ->
 		    msgpack_util:call_done(CallID),
 		    case ResCode of
 			nil ->   gen_server:reply(From, Result);
@@ -203,6 +196,17 @@ handle_info({tcp, _Socket, Pack}, #state{module=Mod,mprc=MPRC}=State)->
 		    NewMPRC = MPRC#mprc{carry = RemBin},
 		    ok = mprc:active_once(MPRC),
 		    {noreply, State#state{mprc=NewMPRC}};
+		[{CallID,{send,From}}|_] ->
+		    msgpack_util:call_done(CallID),
+		    case ResCode of
+			nil ->   From ! {CallID, Result};
+			Error -> From ! {CallID, {Error,Result}}
+		    end,
+		    NewMPRC = MPRC#mprc{carry = RemBin},
+		    ok = mprc:active_once(MPRC),
+		    {noreply, State#state{mprc=NewMPRC}};
+		% */ needs refactor end
+		
 		_Other ->		% Error
 		    io:format("error ~s~p: ~p~n", [?FILE, ?LINE, _Other]),
 		    ok = mprc:active_once(MPRC),
