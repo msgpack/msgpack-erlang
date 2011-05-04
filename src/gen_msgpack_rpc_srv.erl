@@ -21,7 +21,7 @@
 -include("msgpack_rpc.hrl").
 
 %% API
--export([start_link/2, behaviour_info/1]).
+-export([start_link/2, notify/2, behaviour_info/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -51,8 +51,10 @@ start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
     {ok,_Pid}=gen_server:start_link(?MODULE, [Module,Socket], []).
 
 % TODO/TBF
-% notify(Node, Type, Method, Argv)->
-%   
+notify(Method, Argv)->
+    Pid = self(),
+    gen_server:handle_cast(Pid, {notify, Method, Argv}).
+
 
 %%====================================================================
 %% gen_server callbacks
@@ -104,13 +106,15 @@ handle_call(Request, From, #state{context=Context,module=Module}=State) ->
 %%                                      {stop, Reason, State}
 %% Description: Handling cast messages
 %%--------------------------------------------------------------------
-handle_cast(Msg, #state{context=Context,module=Module}=State) ->
-    case Module:handle_cast(Msg,Context) of
-	{noreply, NextContext}->
-	    {noreply, State#state{context=NextContext}};
-	{stop,Reason,NextContext}->
-	    {stop,Reason,State#state{context=NextContext}}
-    end.
+
+handle_cast({notify, Method, Argv}, #state{socket=Socket}=State) ->
+    Msg = [?MP_TYPE_NOTIFICATION, Method, Argv],
+    ok=gen_tcp:send(Socket,msgpack:pack(Msg)),
+    {noreply, State};
+
+handle_cast(Msg, State)->
+    error_logger:info_msg("~s:~p unknown message: ~p .\n", [?FILE, ?LINE, Msg]),
+    {noreply, State}.
 
 %%--------------------------------------------------------------------
 %% Function: handle_info(Info, State) -> {noreply, State} |
@@ -182,7 +186,9 @@ handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when i
     try
 	Method = binary_to_atom(M, latin1),
 	Prefix = [?MP_TYPE_RESPONSE, CallID],
-	case erlang:apply(Module,Method,Argv) of
+	erlang:display({Module,Method,Argv}),
+	Spam = erlang:apply(Module,Method,Argv),
+	case Spam of
 	    {reply, Result}->
 		ReplyBin = msgpack:pack(Prefix++[nil, Result]),
 		ok=gen_tcp:send(Socket,ReplyBin),
@@ -200,14 +206,15 @@ handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when i
 	end
     catch
 	_:undef ->
-	    error_logger:error_msg("no such method: ~p:~s/~p~n", [Module,binary_to_list(M),length(Argv)]),
-	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"no such func">>, nil])),
-	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
+	    erlang:display(Module:module_info()),
+	    error_logger:error_msg("~s:~p no such method: ~p:~s/~p~n",
+				   [?FILE,?LINE,Module,binary_to_list(M),length(Argv)]),
+	    Msg = << (<<"no such method: ">>)/binary, M/binary>>,
+	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, Msg, nil])),
 	    {ok, Context};
 
-	  _:What ->
+	_:What ->
 	    error_logger:error_msg("unknown error: ~p (~p:~s/~p)~n", [What, Module,binary_to_list(M),length(Argv)]),
 	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil])),
-	    ok=inet:setopts(Socket, [{active,once}, {packet,raw}]),
 	    {ok, Context}
     end.

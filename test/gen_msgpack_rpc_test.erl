@@ -20,8 +20,13 @@
 -behaviour(gen_msgpack_rpc).
 
 -export([init/1, handle_call/3, terminate/2, code_change/3]).
+-export([got_notify/1]).
 
 -record(state, {}).
+
+got_notify(BinPid)->
+    Pid = binary_to_term(BinPid),
+    Pid ! got_notify.
 
 init(_)->
     {ok, #state{}}.
@@ -92,12 +97,39 @@ easy2_test()->
     Results = loop_receive(length(CallIDs), []),
     ?assertEqual(lists:keysort(1,CallIDs), Results),
 
-    ?assertEqual({error, <<"no such func">>}, gen_msgpack_rpc:call(Pid2, addhage, [])),
+    ?assertEqual({error, <<"no such method: addhage">>}, gen_msgpack_rpc:call(Pid2, addhage, [])),
 
     ok=gen_msgpack_rpc:stop(Pid2),
     ok=mprc:stop(),
 
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
+
+notify_test()->
+    {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
+    ?assert(is_pid(Pid)),
+
+    ok=mprc:start(),
+
+    {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
+    
+    ?assertEqual({ok,"hello, msgpack!"}, gen_msgpack_rpc:call(Pid2, hello, [])),
+    ?assertEqual({ok,4}, gen_msgpack_rpc:call(Pid2, add, [2,2])),
+    ?debugHere,
+    Pid3 = self(),
+    ?assertEqual({ok,ok}, gen_msgpack_rpc:call(Pid2, send_notify, [512, term_to_binary(Pid3)])),
+    ?debugHere,
+
+    receive
+	got_notify -> ok;
+	_ -> ?assert(false)
+    end,
+
+    ok=gen_msgpack_rpc:stop(Pid2),
+    ok=mprc:stop(),
+
+    ?assertEqual(ok,gen_server:call(Pid,stop)),
+    ok.
+    
 
 -endif.

@@ -8,30 +8,30 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--behaviour(gen_msgpack_rpc).
--compile(export_all).
+%-behaviour(gen_msgpack_rpc).
+%-compile(export_all).
 
--record(state, {}).
+%% -record(state, {}).
 
-init(_Argv)->
-    {ok, #state{}}.
+%% init(_Argv)->
+%%     {ok, #state{}}.
 
-hello()->
-    {"hello, msgpack!"}.
+%% hello()->
+%%     {"hello, msgpack!"}.
 
-sub(I, J) when is_integer(I) andalso is_integer(J)->
-						%?debugVal({I,J}),
-    {I+J}.
+%% sub(I, J) when is_integer(I) andalso is_integer(J)->
+%% 						%?debugVal({I,J}),
+%%     {I+J}.
 
-handle_call(_Request, _From, State)->
-    Reply=ok,
-    {reply, Reply, State}.
+%% handle_call(_Request, _From, State)->
+%%     Reply=ok,
+%%     {reply, Reply, State}.
 
-terminate(_Reason, State)->
-    {ok, State}.
+%% terminate(_Reason, State)->
+%%     {ok, State}.
 
-code_change(_OldVsn, State, _Extra) ->
-    {ok, State}.
+%% code_change(_OldVsn, State, _Extra) ->
+%%     {ok, State}.
 
 %% loop(_,  0) -> ok;
 %% loop(Fun,N) ->
@@ -46,12 +46,12 @@ code_change(_OldVsn, State, _Extra) ->
 %%     ok = mp_client:close(),
 %%     ok = sample_app:stop().
 
-easy_test()->
-    {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
-    ?assert(is_pid(Pid)),
+%% easy_test()->
+%%     {ok,Pid} = mprs_tcp:start_link(sample_srv, [{host,localhost},{port,9199}]),
+%%     ?assert(is_pid(Pid)),
     
     
 
-    ?assertEqual(ok,gen_server:call(Pid,stop)),
-    ok.
+%%     ?assertEqual(ok,gen_server:call(Pid,stop)),
+%%     ok.
 

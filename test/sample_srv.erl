@@ -9,7 +9,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% rpc methods
--export([hello/0, add/2]).
+-export([hello/0, add/2, send_notify/2]).
 
 %% API
 -export([init/1, handle_call/3, terminate/2, code_change/3]).
@@ -27,6 +27,10 @@ hello()->
 add(I, J) when is_integer(I) andalso is_integer(J)->
 %    ?debugVal({I,J}),
     {reply, I+J}.
+
+send_notify(Num,BinPid) when is_integer(Num) andalso Num > 0 andalso is_binary(BinPid) ->
+    gen_msgpack_rpc_srv:notify(get_notify, [BinPid]),
+    {reply, ok}.
 
 handle_call(_Request, _From, State)->
     Reply=ok,
