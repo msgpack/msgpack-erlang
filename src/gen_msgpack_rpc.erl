@@ -42,6 +42,7 @@
 
 -behaviour(gen_server).
 -include("msgpack_rpc.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 -define(SERVER, ?MODULE).
 

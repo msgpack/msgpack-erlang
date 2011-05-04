@@ -25,7 +25,7 @@ hello()->
     {reply, "hello, msgpack!"}.
 
 add(I, J) when is_integer(I) andalso is_integer(J)->
-    %?debugVal({I,J}),
+%    ?debugVal({I,J}),
     {reply, I+J}.
 
 handle_call(_Request, _From, State)->
