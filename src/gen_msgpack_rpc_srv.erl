@@ -19,6 +19,7 @@
 
 -behaviour(gen_server).
 -include("msgpack_rpc.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% API
 -export([start_link/2, notify/2, behaviour_info/1]).
@@ -109,6 +110,9 @@ handle_call(Request, From, #state{context=Context,module=Module}=State) ->
 
 handle_cast({notify, Method, Argv}, #state{socket=Socket}=State) ->
     Msg = [?MP_TYPE_NOTIFICATION, Method, Argv],
+    ?debugVal(Msg),
+    ?debugVal(msgpack:pack(Msg)),
+    ?debugVal(Socket),
     ok=gen_tcp:send(Socket,msgpack:pack(Msg)),
     {noreply, State};
 
