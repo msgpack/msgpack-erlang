@@ -9,6 +9,8 @@
 
 -behaviour(supervisor).
 
+-include_lib("eunit/include/eunit.hrl").
+
 %% API
 -export([start_link/0]).
 
@@ -42,6 +44,7 @@ start_link() ->
 init([]) ->
     AChild = {'AName',{mprs,start_link,[sample_srv,[{host,localhost},{port,9199}]]},
 	      permanent,2000,worker,[sample_srv]},
+    ?debugVal(AChild),
     ok=supervisor:check_childspecs([AChild]),
     {ok,{{one_for_all,0,1}, [AChild]}}.
 

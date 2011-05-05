@@ -27,3 +27,8 @@ check:
 	@./rebar build_plt
 	@./rebar check_plt
 	@./rebar analyze
+
+
+crosslang:
+	export ERL_LIBS=../
+	cd test && make crosslang
