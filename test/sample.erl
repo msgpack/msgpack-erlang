@@ -15,4 +15,3 @@ start()->
 stop()->
     ok=application:stop(sample_app),
     halt(). % FIXME: separate from stop/0 call.
-
