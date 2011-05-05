@@ -28,7 +28,6 @@ check:
 	@./rebar check_plt
 	@./rebar analyze
 
-
 crosslang:
-	export ERL_LIBS=../
+	@echo "do ERL_LIBS=../ before you make crosslang or fail"
 	cd test && make crosslang
