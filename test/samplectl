@@ -7,23 +7,23 @@ case "$1" in
   start)
 	
 	echo "Starting SampleApp server" "erl_msgpack_sample"
-	if exec erl -hidden -s sample start -noshell -sname sampleapp; then
-	    log_end_msg 0
+	if erl -detached -s sample start -noshell -sname sampleapp@localhost; then
+	    exit 0
 	else
-	    log_end_msg 1
+	    exit 1
 	fi
 	;;
   stop)
 	echo "Stopping SampleApp server" "erl_msgpack_sample"
-	if erl -eval 'rpc:call(sampleapp, sample, stop, []).' -noshell -sname sampleapp_ctl ; then
-	    log_end_msg 0
+	if erl -eval 'rpc:call(sampleapp@localhost, sample, stop, []).' -s init stop -noshell -sname sampleapp_ctl@localhost ; then
+	    exit 0
 	else
-	    log_end_msg 1
+	    exit 1
 	fi
 	;;
 
   *)
-	log_action_msg "Usage: samplectl {start|stop}"
+	echo "Usage: samplectl {start|stop}"
 	exit 1
 esac
 

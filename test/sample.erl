@@ -10,8 +10,9 @@
 -export([start/0, stop/0]).
 
 start()->
-    application:start(sample_app).
+    ok=application:start(sample_app).
 
 stop()->
-    application:stop(sample_app).
+    ok=application:stop(sample_app),
+    halt(). % FIXME: separate from stop/0 call.
 
