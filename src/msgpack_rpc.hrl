@@ -31,5 +31,7 @@
 
 -type server_name() :: {local, name()} | {global, global_name()}.
 -type server_ref() :: pid() | name() | { name(), node() } | {global, global_name()}.
+
+-type nport() :: (1..65535).
  
 -endif.

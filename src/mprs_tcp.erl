@@ -23,7 +23,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/2, start/2]).
+-export([start_link/2, start_link/3]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -43,14 +43,15 @@
 %% TODO: maket start_link/3 for multiple listening
 %% @end
 %%--------------------------------------------------------------------
--spec start_link(Mod::atom(), [term()]) -> {ok, Pid::pid()} | ignore | {error, Error::term()}.
+-spec start_link(Mod::atom(), [term()]) ->
+			{ok, Pid::pid()} | ignore | {error, Error::term()}.
 start_link(Mod, Options) ->
-    gen_server:start_link({local, ?SERVER}, ?MODULE, [Mod, Options], []).
+    start_link({local, ?SERVER}, Mod, Options).
 
-% for test only
--spec start(Mod::atom(), [term()]) -> {ok, Pid::pid()} | ignore | {error, Error::term()}.
-start(Mod, Options) ->
-    gen_server:start({local, ?SERVER}, ?MODULE, [Mod, Options], []).
+-spec start_link(Id::atom(), Mod::atom(), [term()]) ->
+			{ok, Pid::pid()} | ignore | {error, Error::term()}.
+start_link(Id, Mod, Options) ->
+    gen_server:start_link(Id, ?MODULE, [Mod, Options], []).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -167,7 +168,7 @@ handle_info({inet_async, ListSock, Ref, Error}, #state{listener=ListSock, accept
     {stop, Error, State};
 
 handle_info({'EXIT', _Pid, normal}, State) ->
-    error_logger:error_report({?MODULE, ?LINE, {State}}),
+%    error_logger:error_report({?MODULE, ?LINE, {State}}),
     {noreply, State};
 handle_info({'EXIT', _Pid, Reason}, State) ->
     %% If there was an unexpected error accepting, log and sleep.

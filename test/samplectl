@@ -7,7 +7,7 @@ case "$1" in
   start)
 	
 	echo "Starting SampleApp server" "erl_msgpack_sample"
-	if exec erl -hidden -s sample start -s init stop -noshell -sname sampleapp; then
+	if exec erl -hidden -s sample start -noshell -sname sampleapp; then
 	    log_end_msg 0
 	else
 	    log_end_msg 1
