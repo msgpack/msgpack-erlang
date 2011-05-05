@@ -22,7 +22,7 @@ init(_Argv)->
     {ok, #state{}}.
 
 hello()->
-    {reply, "hello, msgpack!"}.
+    {reply, <<"hello, msgpack!">>}.
 
 add(I, J) when is_integer(I) andalso is_integer(J)->
 %    ?debugVal({I,J}),

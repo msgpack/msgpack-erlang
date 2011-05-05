@@ -15,7 +15,7 @@ easy_test()->
     ok=mprc:start(),
     {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
     
-    ?assertEqual({ok,"hello, msgpack!"}, gen_msgpack_rpc:call(Pid2, hello, [])),
+    ?assertEqual({ok,<<"hello, msgpack!">>}, gen_msgpack_rpc:call(Pid2, hello, [])),
     ?assertEqual({ok,3}, gen_msgpack_rpc:call(Pid2, add, [1, 2])),
     ?assertEqual({ok,125}, gen_msgpack_rpc:call(?MODULE, add, [123, 2])),
 

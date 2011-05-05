@@ -89,7 +89,7 @@ notify_test()->
 
     {ok, Pid2}=gen_msgpack_rpc:start_link({local,sample_client},sample_client,localhost,9199,[tcp]),
     
-    ?assertEqual({ok,"hello, msgpack!"}, gen_msgpack_rpc:call(Pid2, hello, [])),
+    ?assertEqual({ok,<<"hello, msgpack!">>}, gen_msgpack_rpc:call(Pid2, hello, [])),
     ?assertEqual({ok,4}, gen_msgpack_rpc:call(Pid2, add, [2,2])),
     Pid3 = self(),
     ?assertEqual({ok,<<"ok">>}, gen_msgpack_rpc:call(Pid2, send_notify, [512, term_to_binary(Pid3)])),

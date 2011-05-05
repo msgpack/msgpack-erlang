@@ -16,7 +16,7 @@ easy_test()->
     {ok,S} = mprc:connect(localhost,9199,[]),
 
     {Ret,MPRC0} = mprc:call(S, hello, []), 
-    ?assertEqual(Ret, {ok,"hello, msgpack!"}),
+    ?assertEqual(Ret, {ok,<<"hello, msgpack!">>}),
     {Ret0, MPRC1} = mprc:call(MPRC0, add, [230,4]),
     ?assertEqual({ok,234}, Ret0),
     A=2937845, B=238945029038453490, C=A+B,

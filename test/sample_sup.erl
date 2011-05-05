@@ -40,8 +40,9 @@ start_link() ->
 %% specifications.
 %%--------------------------------------------------------------------
 init([]) ->
-    AChild = {'AName',{sample_srv,start_link,[]},
+    AChild = {'AName',{mprs,start_link,[sample_srv,[{host,localhost},{port,9199}]]},
 	      permanent,2000,worker,[sample_srv]},
+    ok=supervisor:check_childspecs([AChild]),
     {ok,{{one_for_all,0,1}, [AChild]}}.
 
 %%====================================================================

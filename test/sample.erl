@@ -10,8 +10,16 @@
 -export([start/0, stop/0]).
 
 start()->
-    ok=application:start(sample_app).
+    ok=application:start(sample).
 
 stop()->
-    ok=application:stop(sample_app),
+    ok=application:stop(sample),
     halt(). % FIXME: separate from stop/0 call.
+
+-include_lib("eunit/include/eunit.hrl").
+
+%% easy_test()->
+%%     ?debugVal(c:pwd()),
+%%     {ok,Pid}=sample:start(),
+%%     ?assert(is_pid(Pid)).
+%    erlang:exit(Pid,normal).
