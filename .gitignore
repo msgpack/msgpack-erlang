@@ -1,6 +1,6 @@
 .eunit
 ebin/*.app
-ebin/*.beam
+*.beam
 doc/*.html
 doc/edoc-info
 doc/erlang.png
