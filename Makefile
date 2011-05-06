@@ -24,8 +24,8 @@ doc:
 	@./rebar doc
 
 check:
-	@./rebar build_plt
-	@./rebar check_plt
+	@./rebar build-plt
+	@./rebar check-plt
 	@./rebar analyze
 
 crosslang:
