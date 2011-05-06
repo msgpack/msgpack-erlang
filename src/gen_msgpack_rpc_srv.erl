@@ -36,7 +36,7 @@ behaviour_info(_Other) ->
 
 -record(state, {socket :: inet:socket(),
 		module :: atom(),
-		context,
+		context :: term(),
 		carry = <<>> :: binary()}).
 
 %%====================================================================

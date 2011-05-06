@@ -24,9 +24,10 @@ doc:
 	@./rebar doc
 
 check:
-	@./rebar build-plt
+	@echo "you need ./rebar build-plt before make check"
+# @./rebar build-plt
 	@./rebar check-plt
-	@./rebar analyze
+	@./rebar dialyze
 
 crosslang:
 	@echo "do ERL_LIBS=../ before you make crosslang or fail"
