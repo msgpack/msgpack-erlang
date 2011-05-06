@@ -75,17 +75,24 @@ connect(Address, Port, Options)->
 -spec call(mprc(), Method::atom(), Argv::list()) -> 
 		  {ok, term()} | {error, {atom(), any()}}.
 call(#mprc{transport=tcp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
-    mprc_tcp:call(MPRC, Method, Argv).
+    mprc_tcp:call(MPRC, Method, Argv);
+call(#mprc{transport=udp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    mprc_udp:call(MPRC, Method, Argv).
 
 call_async(#mprc{transport=tcp}=MPRC,Method,Argv)->
-    mprc_tcp:call_async(MPRC, Method, Argv).
+    mprc_tcp:call_async(MPRC, Method, Argv);
+call_async(#mprc{transport=udp}=MPRC,Method,Argv)->
+    mprc_udp:call_async(MPRC, Method, Argv).
 
 -spec join(mprc(), integer() | [integer()]) -> {term(), mprc} | {[term()], mprc()} | {error, term()}.
 join(#mprc{transport=tcp}=MPRC, CallIDs)->
-    mprc_tcp:join(MPRC, CallIDs).
+    mprc_tcp:join(MPRC, CallIDs);
+join(#mprc{transport=udp}=MPRC, CallIDs)->
+    mprc_udp:join(MPRC, CallIDs).
 
 -spec close(mprc()) -> ok|{error,term()}.		    
-close(#mprc{transport=tcp}=MPRC)-> mprc_tcp:close(MPRC).
+close(#mprc{transport=tcp}=MPRC)-> mprc_tcp:close(MPRC);
+close(#mprc{transport=udp}=MPRC)-> mprc_udp:close(MPRC).
 
 -spec controlling_process(mprc(), pid())-> ok.
 controlling_process(#mprc{transport=tcp}=MPRC, Pid)->
@@ -104,6 +111,8 @@ append_binary(#mprc{transport=tcp}=MPRC, Bin)->
 parse_options([], Options)-> Options;
 parse_options([tcp|L], Options) ->
     parse_options(L, Options#options{transport=tcp});
+parse_options([udp|L], Options) ->
+    parse_options(L, Options#options{transport=udp});
 parse_options([inet|L], Options) ->
     parse_options(L, Options#options{ip=inet});
 parse_options([{host,Host}|L],Options)->
@@ -112,16 +121,18 @@ parse_options([{port,Port}|L], Options) when is_integer(Port), 0 < Port , Port <
     parse_options(L, Options#options{port=Port});
 parse_options([Opt|_], _)->
     {error, {not_supported, Opt}}.
-%% parse_options([udp|L], Options) ->
-%%     {error, {not_supported, udp}};
 %% parse_options([sctp|L], Options) ->
 %%     {error, {not_supported, sctp}};
 %% parse_options([uds|L], Options) ->
 %%     {error, {not_supported, uds}};
-%% parse_options([
 
-get_module(#options{transport=tcp}=_Opts)-> mprc_tcp.
+get_module(#options{transport=tcp}=_Opts)-> mprc_tcp;
+get_module(#options{transport=udp}=_Opts)-> mprc_udp.
 
+make_options(#options{transport=udp}=Opt)->
+    [Opt#options.ip, binary, {active, false}];
 make_options(Opt)->
 %    [{host,Opt#options.host}, {port,Opt#options.port},
     [Opt#options.ip, {packet,0}, binary, {active, false}].
+
+

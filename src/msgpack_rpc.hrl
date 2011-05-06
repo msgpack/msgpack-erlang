@@ -25,15 +25,17 @@
 -type global_name() :: term().
 
 -type transport() :: tcp | udp. % sctp | snappy | zip | etc...
-
+-type nport() :: (1..65535).
+ 
 -record(mprc, { s :: inet:socket(),
 		carry = <<>> :: binary(),
-		transport = tcp :: transport()}).
+		transport = tcp :: transport(),
+		host :: inet:ip_address(),
+		port :: nport()
+	      }).
 -type mprc() :: #mprc{}.
 
 -type server_name() :: {local, name()} | {global, global_name()}.
 -type server_ref() :: pid() | name() | { name(), node() } | {global, global_name()}.
 
--type nport() :: (1..65535).
- 
 -endif.

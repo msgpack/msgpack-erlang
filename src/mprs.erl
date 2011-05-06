@@ -38,6 +38,8 @@ stop(Pid)->
 parse_options([], Options)-> Options;
 parse_options([tcp|L], Options) ->
     parse_options(L, Options#options{transport=tcp});
+parse_options([udp|L], Options) ->
+    parse_options(L, Options#options{transport=udp});
 parse_options([inet|L], Options) ->
     parse_options(L, Options#options{ip=inet});
 parse_options([{host,Host}|L],Options)->
@@ -46,15 +48,14 @@ parse_options([{port,Port}|L], Options) when is_integer(Port), 0 < Port , Port <
     parse_options(L, Options#options{port=Port});
 parse_options([Opt|_], _)->
     {error, {not_supported, Opt}}.
-%% parse_options([udp|L], Options) ->
-%%     {error, {not_supported, udp}};
 %% parse_options([sctp|L], Options) ->
 %%     {error, {not_supported, sctp}};
 %% parse_options([uds|L], Options) ->
 %%     {error, {not_supported, uds}};
 %% parse_options([
 
-get_module(#options{transport=tcp}=_Opts)-> mprs_tcp.
+get_module(#options{transport=tcp}=_Opts)-> mprs_tcp;
+get_module(#options{transport=udp}=_Opts)-> mprs_udp.
 
 make_options(Opt)->
     [{host,Opt#options.host}, {port,Opt#options.port},

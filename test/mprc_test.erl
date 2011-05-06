@@ -78,3 +78,33 @@ conn_test()->
     ?assertEqual(ok,gen_server:call(Pid,stop)),
     ok.
     
+
+% UDP test
+easy3_test()->
+    {ok,Pid} = mprs:start_link(sample_srv, [{host,localhost},{port,9199},udp]),
+    ?assert(is_pid(Pid)),
+
+    ok = mprc:start(),
+    {ok,S} = mprc:connect(localhost,9199,[udp]),
+
+    {Ret, _} = mprc:call(S, hello, []), 
+    ?assertEqual(Ret, {ok,<<"hello, msgpack!">>}),
+    {Ret0, _} = mprc:call(S, add, [230,4]),
+    ?assertEqual({ok,234}, Ret0),
+    A=2937845, B=238945029038453490, C=A+B,
+    {Ret1, _} = mprc:call(S, add, [A,B]),
+    ?assertEqual({ok,C}, Ret1),
+%% % TODO: make it exception thrown
+%% %    ?assertEqual(234, mprc:call(S, addo, [230,0])),
+    {ok, CallID0} = mprc:call_async(S, add, [23, -23]),
+    {ok, CallID1} = mprc:call_async(S, add, [23, 23]),
+    {Ans, _MPRC3} = mprc:join(S, [CallID0, CallID1]),
+    ?assertEqual(Ans, [{ok,46},{ok,0}]), % maybe reversed
+%    ?debugVal(mprc:join(_MPRC3, CallID2)),
+    
+    ?assertEqual(ok, mprc:close(S)),
+    ok = mprc:stop(),
+
+    ?assertEqual(ok,gen_server:call(Pid,stop)),
+    ok.
+    
