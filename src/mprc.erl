@@ -37,6 +37,12 @@
 -include("msgpack_rpc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
+-record(options, 
+	{ transport = tcp :: transport(),
+	  ip = inet:: inet | inet6,
+	  host :: inet:ip_address(),
+	  port :: nport() }).
+
 %% external API
 -export([start/0, stop/0,
 	 connect/3, close/1, call/3, call_async/3, join/2,
@@ -56,9 +62,11 @@ stop()->
 -spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])->
 		     {ok, mprc()}|{error,Reason::term()}.
 connect(Address, Port, Options)->
-    _Options1 = parse_options(Options),
-    {ok,S}=gen_tcp:connect(Address, Port, [binary, {packet,0}, {active,false}]),
-    {ok, #mprc{s=S}}.
+    Opts = parse_options(Options, #options{}),
+    TransportModule = get_module(Opts),
+    TransportModule:connect(Address, Port, make_options(Opts)).
+    %% {ok,S}=gen_tcp:connect(Address, Port, [binary, {packet,0}, {active,false}]),
+    %% {ok, #mprc{s=S}}.
 
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
@@ -66,101 +74,54 @@ connect(Address, Port, Options)->
 % user func error => {error, {<<"unexpected error">>, nil}}
 -spec call(mprc(), Method::atom(), Argv::list()) -> 
 		  {ok, term()} | {error, {atom(), any()}}.
-call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
-    {ok,CallID}=call_async(MPRC,Method,Argv),
-    ?MODULE:join(MPRC,CallID).
+call(#mprc{transport=tcp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
+    mprc_tcp:call(MPRC, Method, Argv).
 
-call_async(MPRC,Method,Argv)->
-    CallID = msgpack_util:get_callid(),
-    Meth = atom_to_binary(Method,latin1),
-    case msgpack:pack([?MP_TYPE_REQUEST,CallID,Meth,Argv]) of
-	{error, Reason}->
-	    {error, Reason};
-	Pack ->
-	    ok=gen_tcp:send(MPRC#mprc.s, Pack),
-	    {ok,CallID}
-    end.
+call_async(#mprc{transport=tcp}=MPRC,Method,Argv)->
+    mprc_tcp:call_async(MPRC, Method, Argv).
 
 -spec join(mprc(), integer() | [integer()]) -> {term(), mprc} | {[term()], mprc()} | {error, term()}.
-join(MPRC, CallIDs) when is_list(CallIDs)-> join_(MPRC, CallIDs, []);
-join(MPRC, CallID)-> 
-    {[Term], MPRC0} = join_(MPRC, [CallID], []),
-    {Term, MPRC0}.
-
-join_(MPRC, [], Got)-> {Got, MPRC};
-join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
-    case msgpack_util:lookup(CallID) of
-	[{CallID,CallID}|_] ->
-	    case msgpack:unpack(MPRC#mprc.carry) of
-		{[?MP_TYPE_RESPONSE, CallID, Error, Retval], RemainBin}->
-		    MPRC0 = MPRC#mprc{carry=RemainBin},
-		    msgpack_util:call_done(CallID),
-		    case {Error, Retval} of
-			{nil, Retval} ->
-			    join_(MPRC0, Remain, [{ok,Retval}|Got]);
-			{Error,nil} ->
-			    join_(MPRC0, Remain, [{error,Error}|Got]);
-			_Other -> % malformed message
-			    throw({malform_msg, _Other})
-		    end;
-		{[?MP_TYPE_RESPONSE, CallID0, Error, Retval], RemainBin}->
-		    msgpack_util:insert({CallID0, Error, Retval}),
-		    MPRC0 = MPRC#mprc{carry=RemainBin},
-		    join_(MPRC0, [CallID|Remain], Got);
-		{error, incomplete} ->
-		    {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
-		    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
-		    join_(MPRC#mprc{carry=NewBin}, Remain, Got);
-		{error, Reason} ->
-		    {error, Reason}
-	    end;
-	[{CallID,Error,Retval}|_] ->
-	    msgpack_util:call_done(CallID),
-	    case {Error, Retval} of
-		{nil, Retval} ->
-		    join_(MPRC, Remain, [{ok,Retval}|Got]);
-		{Error,nil} ->
-		    join_(MPRC, Remain, [{error,Error}|Got]);
-		_Other -> % malformed message
-		    throw({malform_msg, _Other})
-	    end
-    end;
-join_(MPRC, Remain, Got) ->
-    {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
-    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
-    join_(MPRC#mprc{carry=NewBin}, Remain, Got).
+join(#mprc{transport=tcp}=MPRC, CallIDs)->
+    mprc_tcp:join(MPRC, CallIDs).
 
 -spec close(mprc()) -> ok|{error,term()}.		    
-close(Client)-> gen_tcp:close(Client#mprc.s).
+close(#mprc{transport=tcp}=MPRC)-> mprc_tcp:close(MPRC).
 
 -spec controlling_process(mprc(), pid())-> ok.
-controlling_process(MPRC, Pid)->
-    gen_tcp:controlling_process(MPRC#mprc.s, Pid).
+controlling_process(#mprc{transport=tcp}=MPRC, Pid)->
+    mprc_tcp:controlling_process(MPRC,Pid).
 
 -spec active_once(mprc())-> ok.
-active_once(MPRC)->
-    inet:setopts(MPRC#mprc.s, [{active,once}]).
+active_once(#mprc{transport=tcp}=MPRC)->
+    mprc_tcp:active_once(MPRC).
 
-append_binary(MPRC, Bin)->
-    NewBin = <<(MPRC#mprc.carry)/binary, Bin/binary>>,
-    MPRC#mprc{carry=NewBin}.
+append_binary(#mprc{transport=tcp}=MPRC, Bin)->
+    mprc_tcp:append_binary(MPRC, Bin).
 
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-parse_options(_)->
-    ok.
+parse_options([], Options)-> Options;
+parse_options([tcp|L], Options) ->
+    parse_options(L, Options#options{transport=tcp});
+parse_options([inet|L], Options) ->
+    parse_options(L, Options#options{ip=inet});
+parse_options([{host,Host}|L],Options)->
+    parse_options(L, Options#options{host=Host});
+parse_options([{port,Port}|L], Options) when is_integer(Port), 0 < Port , Port < 65536->
+    parse_options(L, Options#options{port=Port});
+parse_options([Opt|_], _)->
+    {error, {not_supported, Opt}}.
+%% parse_options([udp|L], Options) ->
+%%     {error, {not_supported, udp}};
+%% parse_options([sctp|L], Options) ->
+%%     {error, {not_supported, sctp}};
+%% parse_options([uds|L], Options) ->
+%%     {error, {not_supported, uds}};
+%% parse_options([
 
+get_module(#options{transport=tcp}=_Opts)-> mprc_tcp.
 
--ifdef(TEST).
--include_lib("eunit/include/eunit.hrl").
-
-module_test_()->
-    {setup, local,
-     fun()-> mprc:start() end,
-     fun(_)-> mprc:stop() end,
-     [
-     ]
-    }.
-
--endif.
+make_options(Opt)->
+%    [{host,Opt#options.host}, {port,Opt#options.port},
+    [Opt#options.ip, {packet,0}, binary, {active, false}].
