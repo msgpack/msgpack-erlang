@@ -25,6 +25,7 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 
 ## TODO
 
+- session TIMEOUTs for client and server
 - where do I make <<"nil">> atom??
 - error handling 
 -- what if happens when badarg/noproc/bad_clause, and exceptions.
