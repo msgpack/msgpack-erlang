@@ -25,6 +25,7 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 
 ## TODO
 
+- for security: use binary_to_existing_atom/2
 - session TIMEOUTs for client and server
 - where do I make <<"nil">> atom??
 - error handling 
