@@ -21,6 +21,7 @@ easy_test()->
     ?assertEqual({ok,234}, Ret0),
     A=2937845, B=238945029038453490, C=A+B,
     {Ret1, MPRC2} = mprc:call(MPRC1, add, [A,B]),
+    ok = mprc:notify(MPRC2, add, [A,B]),
     ?assertEqual({ok,C}, Ret1),
 % TODO: make it exception thrown
 %    ?assertEqual(234, mprc:call(S, addo, [230,0])),

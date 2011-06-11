@@ -192,7 +192,10 @@ process_binary(#state{socket=Socket, module=Module, context=Context, carry=Bin} 
     end.
 
 handle_notify(?MP_TYPE_NOTIFY, Module, M, Argv)->
-    spawn(fun()-> erlang:apply(Module, M, Argv) end).
+    spawn(fun()->
+		  Method = binary_to_existing_atom(M, latin1),
+		  erlang:apply(Module, Method, Argv)
+	  end).
     
 handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when is_integer(CallID), is_binary(M) ->
     try
