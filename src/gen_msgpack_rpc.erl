@@ -182,9 +182,8 @@ decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
     case msgpack:unpack(Bin) of
 
 	{[?MP_TYPE_NOTIFY,Method,Params],RemBin}->
-	    % maybe we need string whitelist for atom-attack
-	    Meth = binary_to_atom(Method, latin1),
 	    try
+		Meth = binary_to_existing_atom(Method, latin1),
 		_Ret=erlang:apply(Mod,Meth,Params)
 	    catch 
 		_:undef ->
