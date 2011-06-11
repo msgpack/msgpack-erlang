@@ -188,7 +188,7 @@ decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
 	    catch 
 		_:undef ->
 		    error_logger:error_msg("~s:~p unknown method: ~s:~s/~p~n",
-					   [?FILE, ?LINE, Mod,Meth,length(Params)]);
+					   [?FILE, ?LINE, Mod,Method,length(Params)]);
 		_:_Other ->
 		    error_logger:error_msg("error ~s:~p ~p~n", [?FILE, ?LINE, _Other])
 	    end,
