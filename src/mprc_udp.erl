@@ -39,7 +39,7 @@
 
 %% external API
 -export([start/0, stop/0,
-	 connect/3, close/1, call/3, call_async/3, join/2,
+	 connect/3, close/1, call/3, call_async/3, join/2, notify/3,
 	 controlling_process/2, active_once/1, append_binary/2]).
 
 %%====================================================================
@@ -132,6 +132,15 @@ join_(MPRC, Remain, Got) ->
     Port=MPRC#mprc.port,
     NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
     join_(MPRC#mprc{carry=NewBin}, Remain, Got).
+
+notify(MPRC,Method,Argv)->
+    Meth = atom_to_binary(Method,latin1),
+    case msgpack:pack([?MP_TYPE_NOTIFY,Meth,Argv]) of
+	{error, Reason}->
+	    {error, Reason};
+	Pack ->
+	    gen_udp:send(MPRC#mprc.s, MPRC#mprc.host, MPRC#mprc.port, Pack)
+    end.
 
 -spec close(mprc()) -> ok|{error,term()}.		    
 close(Client)-> gen_udp:close(Client#mprc.s).

@@ -113,7 +113,7 @@ handle_cast({notify, Method, Argv}, #state{socket=Socket}=State) ->
     %% Pid = self(),
     %% ok=gen_tcp:controlling_process(Socket,Pid),
     %% inet:setopts(Socket,[binary,raw,{active,false}]),
-    case msgpack:pack([?MP_TYPE_NOTIFICATION, Method, Argv]) of
+    case msgpack:pack([?MP_TYPE_NOTIFY, Method, Argv]) of
 	Msg when is_binary(Msg) ->
 	    gen_tcp:send(Socket, Msg);
 	_Error ->

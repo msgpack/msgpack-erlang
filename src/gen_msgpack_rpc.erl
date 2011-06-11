@@ -181,7 +181,7 @@ decode_all(<<>>, #state{mprc=MPRC}=State)->
 decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
     case msgpack:unpack(Bin) of
 
-	{[?MP_TYPE_NOTIFICATION,Method,Params],RemBin}->
+	{[?MP_TYPE_NOTIFY,Method,Params],RemBin}->
 	    % maybe we need string whitelist for atom-attack
 	    Meth = binary_to_atom(Method, latin1),
 	    try

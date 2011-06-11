@@ -45,7 +45,7 @@
 
 %% external API
 -export([start/0, stop/0,
-	 connect/3, close/1, call/3, call_async/3, join/2,
+	 connect/3, close/1, call/3, call_async/3, join/2, notify/3,
 	 controlling_process/2, active_once/1, append_binary/2]).
 
 %%====================================================================
@@ -89,6 +89,12 @@ join(#mprc{transport=tcp}=MPRC, CallIDs)->
     mprc_tcp:join(MPRC, CallIDs);
 join(#mprc{transport=udp}=MPRC, CallIDs)->
     mprc_udp:join(MPRC, CallIDs).
+
+-spec notify(mprc(), atom(), [term()])-> ok | {error, term()}.
+notify(#mprc{transport=tcp}=MPRC, Method, Argv)->
+    mprc_tcp:notify(MPRC,Method,Argv);
+notify(#mprc{transport=udp}=MPRC, Method, Argv)->
+    mprc_udp:notify(MPRC,Method,Argv).
 
 -spec close(mprc()) -> ok|{error,term()}.		    
 close(#mprc{transport=tcp}=MPRC)-> mprc_tcp:close(MPRC);

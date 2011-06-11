@@ -19,7 +19,7 @@
 
 -define(MP_TYPE_REQUEST,  0).
 -define(MP_TYPE_RESPONSE, 1).
--define(MP_TYPE_NOTIFICATION, 2).
+-define(MP_TYPE_NOTIFY, 2).
 
 -type name() :: atom().
 -type global_name() :: term().
