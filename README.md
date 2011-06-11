@@ -25,7 +25,7 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 
 ## TODO
 
-- for security: use binary_to_existing_atom/2
+- spawn in Request
 - session TIMEOUTs for client and server
 - where do I make <<"nil">> atom??
 - error handling 
@@ -35,7 +35,6 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 -- Ruby: msgpack-rpc 0.4.5 can't access while 0.4.4 works
 -- Python: make msgpackrpc on PyPI
 - coverage 100%
-- UDP transport
 - UDS transport
 - SCTP/SSL/zip and more...
 - rewrite tutorial and README
