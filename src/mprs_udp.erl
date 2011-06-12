@@ -195,8 +195,11 @@ dispatch(From, IP, InPortNo, Packet, #state{module=Module,socket=Socket}=State)-
     case msgpack:unpack(Packet) of
 	{error, incomplete}->
 	    error_logger:error_report([?MODULE, ?LINE, {IP,InPortNo,State, Packet}]);
-	{[?MP_TYPE_REQUEST,CallID,M,Argv], Remain}->
-	    Method = binary_to_atom(M, latin1),
+	{[?MP_TYPE_NOTIFY,M, Argv], _}->
+	    Method = binary_to_existing_atom(M, latin1),
+	    erlang:apply(Module, Method, Argv);
+	{[?MP_TYPE_REQUEST,CallID,M,Argv], _}->
+	    Method = binary_to_existing_atom(M, latin1),
 	    ReplyBin = 
 		try
 		    case erlang:apply(Module,Method,Argv) of
@@ -217,9 +220,5 @@ dispatch(From, IP, InPortNo, Packet, #state{module=Module,socket=Socket}=State)-
 					       [What, Module,binary_to_list(M),length(Argv)]),
 			msgpack:pack([?MP_TYPE_RESPONSE, CallID, Msg, nil])
 		end,
-	    From ! {send, Socket, IP, InPortNo, ReplyBin},
-	    case Remain of
-		<<>> -> ok;
-		_ ->    dispatch(From, IP, InPortNo, Remain, State)
-	    end
+	    From ! {send, Socket, IP, InPortNo, ReplyBin}
     end.
