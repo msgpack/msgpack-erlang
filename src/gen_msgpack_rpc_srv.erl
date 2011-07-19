@@ -199,6 +199,10 @@ spawn_request_handler(CallID, Module, M, Argv)->
 	       Method = binary_to_existing_atom(M, latin1),
 	       Prefix = [?MP_TYPE_RESPONSE, CallID],
 	       Ret = case erlang:apply(Module,Method,Argv) of
+			 {reply, true} ->
+			     msgpack:pack(Prefix++[nil, true]);
+			 {reply, false} ->
+			     msgpack:pack(Prefix++[nil, false]);
 			 {reply, Result} when is_atom(Result) ->
 			     msgpack:pack(Prefix++[nil, atom_to_binary(Result,latin1)]);
 			 {reply, Result} ->
