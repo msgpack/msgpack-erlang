@@ -200,20 +200,14 @@ spawn_request_handler(CallID, Module, M, Argv)->
 	       Method = binary_to_existing_atom(M, latin1),
 	       Prefix = [?MP_TYPE_RESPONSE, CallID],
 	       Ret = case erlang:apply(Module,Method,Argv) of
-			 {reply, true} ->
-			     msgpack:pack(Prefix++[nil, true]);
-			 {reply, false} ->
-			     msgpack:pack(Prefix++[nil, false]);
-			 {reply, Result} when is_atom(Result) ->
-			     msgpack:pack(Prefix++[nil, atom_to_binary(Result,latin1)]);
-			 {reply, Result} ->
-			     msgpack:pack(Prefix++[nil, Result]);
-			 {error, Reason} when is_atom(Reason)->
-			     msgpack:pack(Prefix++[Reason, nil]);
-			 {error, Reason} ->
-			     msgpack:pack(Prefix++[Reason, nil])
+			 {reply, true} ->   [nil, true];
+			 {reply, false} ->  [nil, false];
+			 {reply, Result} when is_atom(Result) ->  [nil, atom_to_binary(Result,latin1)];
+			 {reply, Result} -> [nil, Result];
+			 {error, Reason} when is_atom(Reason)->   [Reason, nil];
+			 {error, Reason} -> [Reason, nil]
 		     end,
-	       Self ! {do_reply, Ret}
+	       Self ! {do_reply, msgpack:pack(Prefix++Ret)}
        end,
     spawn_link(F).
     
