@@ -191,6 +191,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+-spec dispatch(term(), inet:ip_address(), inet:port_number(), binary(), #state{}) -> no_return().
 dispatch(From, IP, InPortNo, Packet, #state{module=Module,socket=Socket}=State)->
     case msgpack:unpack(Packet) of
 	{error, incomplete}->

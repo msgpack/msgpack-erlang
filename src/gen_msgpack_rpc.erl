@@ -48,7 +48,6 @@
 
 %% external API
 -export([start_link/5, stop/1, behaviour_info/1]).
-
 -export([call/3, call_async/3]).
 
 %% internal: gen_server callbacks
@@ -117,24 +116,17 @@ call_async(Id, Method, Argv)->
 %%====================================================================
 
 %% @private
-%% Function: init(Args) -> {ok, State} |%
-%                         {ok, State, Timeout} |
-%%                         ignore               |
-%%                         {stop, Reason}
-%% Description: Initiates the server
-%%--------------------------------------------------------------------
+-spec init([term()]) -> {ok, #state{}}.
 init([Mod, MPRC, _Options])->
     {ok, #state{module=Mod, mprc = MPRC}}.
 
 %% @private
-%% Function: %% handle_call(Request, From, State) -> {reply, Reply, State} |
-%%                                      {reply, Reply, State, Timeout} |
-%%                                      {noreply, State} |
-%%                                      {noreply, State, Timeout} |
-%%                                      {stop, Reason, Reply, State} |
-%%                                      {stop, Reason, State}
-%% Description: Handling call messages
-%%--------------------------------------------------------------------
+% -spec handle_call(Request, From, State) -> {reply, Reply, State} |
+%                                       {reply, Reply, State, Timeout} |
+%                                       {noreply, State} |
+%                                       {noreply, State, Timeout} |
+%                                       {stop, Reason, Reply, State} |
+%                                       {stop, Reason, State}
 handle_call({call, Method, Argv}, From, #state{mprc=MPRC} = State)->
     {ok, CallID} = mprc:call_async(MPRC, Method, Argv),
     msgpack_util:insert({CallID,{reply,From}}),
@@ -175,6 +167,7 @@ handle_info(_Info, State) ->
     error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Info]),
     {noreply, State}.
 
+-spec decode_all(binary(), #state{}) -> {noreply, #state{}}.
 decode_all(<<>>, #state{mprc=MPRC}=State)->
     ok = mprc:active_once(MPRC),
     {noreply, State};

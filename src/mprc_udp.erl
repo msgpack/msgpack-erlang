@@ -69,6 +69,7 @@ call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     {ok,CallID}=call_async(MPRC,Method,Argv),
     ?MODULE:join(MPRC,CallID).
 
+-spec call_async(mprc(), atom(), [term()]) -> {ok, non_neg_integer()}.
 call_async(MPRC,Method,Argv)->
     CallID = msgpack_util:get_callid(),
     Meth = atom_to_binary(Method,latin1),
@@ -129,6 +130,7 @@ join_(MPRC, Remain, Got) ->
     NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
     join_(MPRC#mprc{carry=NewBin}, Remain, Got).
 
+-spec notify(mprc(), atom(), [term()])-> ok | {error, term()}.
 notify(MPRC,Method,Argv)->
     Meth = atom_to_binary(Method,latin1),
     case msgpack:pack([?MP_TYPE_NOTIFY,Meth,Argv]) of

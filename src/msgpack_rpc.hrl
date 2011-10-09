@@ -30,6 +30,7 @@
 -record(mprc, { s :: inet:socket(),
 		carry = <<>> :: binary(),
 		transport = tcp :: transport(),
+		transport_mod = mprc_tcp :: atom(),
 		host :: inet:ip_address(),
 		port :: nport()
 	      }).

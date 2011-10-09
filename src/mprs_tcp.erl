@@ -156,10 +156,12 @@ handle_info({inet_async, ListSock, Ref, {ok, CliSocket}},
 
         %% Signal the network driver that we are ready to accept another connection
         case prim_inet:async_accept(ListSock, -1) of
-	    {ok,    NewRef} -> ok;
-	    {error, NewRef} -> exit({async_accept, inet:format_error(NewRef)})
-        end,
-        {noreply, State#state{acceptor=NewRef}}
+	    {ok,    NewRef} ->
+		{noreply, State#state{acceptor=NewRef}};
+
+	    {error, NewRef} ->
+		exit({async_accept, inet:format_error(NewRef)})
+        end
 
     catch exit:Why ->
         error_logger:error_msg("Error in async accept: ~p.\n", [Why]),

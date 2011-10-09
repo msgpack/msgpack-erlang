@@ -59,25 +59,25 @@ start()->
 stop()->
     msgpack_util:stop().
 
--spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])->
+-spec connect(gen_tcp:ip_address(), inet:port_number(), Options::[term()])->
 		     {ok, mprc()}|{error,Reason::term()}.
 connect(Address, Port, Options)->
     Opts = parse_options(Options, #options{}),
     TransportModule = get_module(Opts),
     TransportModule:connect(Address, Port, make_options(Opts)).
-    %% {ok,S}=gen_tcp:connect(Address, Port, [binary, {packet,0}, {active,false}]),
-    %% {ok, #mprc{s=S}}.
 
-% synchronous calls
+% @doc synchronous calls
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
+% @end
 -spec call(mprc(), Method::atom(), Argv::list()) -> {term(), mprc()} | {error, {atom(), any()}}.
 call(#mprc{transport=tcp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     mprc_tcp:call(MPRC, Method, Argv);
 call(#mprc{transport=udp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     mprc_udp:call(MPRC, Method, Argv).
 
+-spec call_async(mprc(), atom(), [term()]) -> {ok, non_neg_integer()}.
 call_async(#mprc{transport=tcp}=MPRC,Method,Argv)->
     mprc_tcp:call_async(MPRC, Method, Argv);
 call_async(#mprc{transport=udp}=MPRC,Method,Argv)->
@@ -113,6 +113,7 @@ append_binary(#mprc{transport=tcp}=MPRC, Bin)->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
+-spec parse_options([ atom() | {atom(), term()}], #options{}) -> #options{}.
 parse_options([], Options)-> Options;
 parse_options([tcp|L], Options) ->
     parse_options(L, Options#options{transport=tcp});
@@ -131,9 +132,11 @@ parse_options([Opt|_], _)->
 %% parse_options([uds|L], Options) ->
 %%     {error, {not_supported, uds}};
 
+-spec get_module(#options{}) -> mprc_tcp | mprc_udp.
 get_module(#options{transport=tcp}=_Opts)-> mprc_tcp;
 get_module(#options{transport=udp}=_Opts)-> mprc_udp.
 
+-spec make_options(#options{}) -> [gen_tcp:connect_option()].
 make_options(#options{transport=udp}=Opt)->
     [Opt#options.ip, binary, {active, false}];
 make_options(Opt)->

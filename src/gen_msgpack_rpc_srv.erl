@@ -43,20 +43,17 @@ behaviour_info(_Other) ->
 %% API
 %%====================================================================
 %%--------------------------------------------------------------------
-%% Function: start_link() -> {ok,Pid} | ignore | {error,Error}
 %% Description: [Module]++[Socket] will come. 
-%%   see mp_server_sup:start_client for caller.
-%%--------------------------------------------------------------------
+-spec start_link(atom(), inet:socket()) -> {ok,pid()}.
 start_link(Module,Socket) when is_atom(Module), is_port(Socket)->
 %    gen_server:start_link(?MODULE, [Module,Socket], [{debug,[trace,log,statistics]}]).
     {ok,_Pid}=gen_server:start_link(?MODULE, [Module,Socket], []).
 
 % TODO/TBF
+-spec notify(term(), atom(), [term()]) -> ok.
 notify(Id, Method, Argv) when is_atom(Method) andalso is_list(Argv) ->
     Meth = atom_to_binary(Method,latin1),
     gen_server:cast(Id, {notify, Meth, Argv}). % don't know why it doesn't work => goes {error, einval}
-%    gen_server:call(Pid, {notify, Meth, Argv}).
-
 
 %%====================================================================
 %% gen_server callbacks
@@ -170,7 +167,7 @@ code_change(OldVsn, #state{module=Module, context=Context} = State, Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-
+-spec process_binary(#state{}) -> {noreply, #state{}} | {stop, term(), #state{}}.
 process_binary(#state{socket=Socket, module=Module, context=Context, carry=Bin} = State)->
     case msgpack:unpack(Bin) of
 	{[?MP_TYPE_NOTIFY,M,Argv], Remain} ->
@@ -187,6 +184,7 @@ process_binary(#state{socket=Socket, module=Module, context=Context, carry=Bin} 
 	    {stop, Reason, State}
     end.
 
+-spec handle_notify(atom(), binary(), [term()]) -> pid().
 handle_notify(Module, M, Argv)->
     spawn(fun()->
 		  Method = binary_to_existing_atom(M, latin1),
@@ -210,45 +208,3 @@ spawn_request_handler(CallID, Module, M, Argv)->
 	       Self ! {do_reply, msgpack:pack(Prefix++Ret)}
        end,
     spawn_link(F).
-    
-%% handle_request(?MP_TYPE_REQUEST, CallID, Module, M, Argv,Socket, Context) when is_integer(CallID), is_binary(M) ->
-%%     try
-%% 	Method = binary_to_atom(M, latin1),
-%% 	Prefix = [?MP_TYPE_RESPONSE, CallID],
-%% 	Spam = erlang:apply(Module,Method,Argv),
-%% 	case Spam of
-%% 	    {reply, Result} when is_atom(Result) ->
-%% 		ReplyBin = msgpack:pack(Prefix++[nil, atom_to_binary(Result,latin1)]),
-%% %		?debugVal(ReplyBin),
-%% 		ok=gen_tcp:send(Socket,ReplyBin),
-%% 		{ok, Context};
-%% 	    {reply, Result} ->
-%% 		ReplyBin = msgpack:pack(Prefix++[nil, Result]),
-%% 		ok=gen_tcp:send(Socket,ReplyBin),
-%% 		{ok, Context};
-%% 	    {noreply, _Result}-> {ok, Context};
-%% 	    {stop_reply, Result, Reason}->
-%% 		ReplyBin = msgpack:pack(Prefix++[ nil, Result]),
-%% 		ok=gen_tcp:send(Socket,ReplyBin),
-%% 		{stop, Reason};
-%% 	    {stop, Reason}-> {stop, Reason};
-%% 	    {error, Reason}->
-%% 		ReplyBin = msgpack:pack(Prefix++[Reason, nil]),
-%% 		ok=gen_tcp:send(Socket,ReplyBin),
-%% 		{ok,Context}
-%% 	end
-%%     catch
-%% 	_:undef ->
-%% 	    erlang:display(Module:module_info()),
-%% 	    error_logger:error_msg("~s:~p no such method: ~p:~s/~p~n",
-%% 				   [?FILE,?LINE,Module,binary_to_list(M),length(Argv)]),
-%% 	    Msg = << (<<"no such method: ">>)/binary, M/binary>>,
-%% 	    ok=gen_tcp:send(Socket, msgpack:pack([?MP_TYPE_RESPONSE, CallID, Msg, nil])),
-%% 	    {ok, Context};
-
-%% 	_:What ->
-%% 	    Msg = [?MP_TYPE_RESPONSE, CallID, <<"unexpected error">>, nil],
-%% 	    error_logger:error_msg("unknown error: ~p (~p:~s/~p)~n", [What, Module,binary_to_list(M),length(Argv)]),
-%% 	    ok=gen_tcp:send(Socket, msgpack:pack(Msg)),
-%% 	    {ok, Context}
-%%     end.
