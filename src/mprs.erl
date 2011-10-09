@@ -17,11 +17,11 @@
 	  host :: inet:ip_address(),
 	  port :: nport() }).
 
--spec start_link(atom(), #options{})-> {ok, pid()}.
+-spec start_link(atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Module, Options)->
     start_link({local, ?MODULE}, Module, Options).
 
--spec start_link(term(), atom(), #options{})-> {ok, pid()}.
+-spec start_link(term(), atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Name,Module,Options)->
     Opts = parse_options(Options, #options{}),
     TransportMod = get_module(Opts),

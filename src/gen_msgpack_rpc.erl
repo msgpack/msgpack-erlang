@@ -200,21 +200,17 @@ decode_all(Bin, #state{module=Mod,mprc=MPRC}=State)->
 		% /* needs refactor, just reply => reply, send => !
 		[{CallID,{reply,From}}|_] -> % sync call
 		    msgpack_util:call_done(CallID),
-		    case {ResCode, Result} of
-			{nil, Result} ->   gen_server:reply(From, {ok,Result});
-			{Error, nil}  ->   gen_server:reply(From, {error,Error});
-			_Other -> 
-			    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
+		    case ResCode of
+			nil ->   gen_server:reply(From, {ok,Result});
+			Error ->   gen_server:reply(From, {error,Error})
 		    end,
 		    decode_all(RemBin, State);
 
 		[{CallID,{send,From}}|_] -> % async_call
 		    msgpack_util:call_done(CallID),
-		    case {ResCode, Result} of
-			{nil,Result} -> From ! {CallID, {ok,Result}};
-			{Error,nil}  -> From ! {CallID, {error,Error}};
-			_Other -> 
-			    error_logger:error_msg("error ~s~p: ~p~n", [?FILE, ?LINE, _Other])
+		    case ResCode of
+			nil -> From ! {CallID, {ok,Result}};
+			Error -> From ! {CallID, {error,Error}}
 		    end,
 		    decode_all(RemBin, State);
 		% */ needs refactor end

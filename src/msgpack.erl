@@ -38,13 +38,12 @@
 
 -export([pack/1, unpack/1, unpack_all/1]).
 
-% @type msgpack_term() = [msgpack_term()]
-%                      | {[{msgpack_term(),msgpack_term()}]}
-%                      | integer() | float() | binary().
+% @type msgpack_map() = [msgpack_term()] | msgpack_map() | integer() | float() | binary().
+-type msgpack_map() :: {[{msgpack_term(), msgpack_term()}]}.
+
+% @type msgpack_term() = [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 % Erlang representation of msgpack data.
--type msgpack_term() :: [msgpack_term()]
-		      | {[{msgpack_term(),msgpack_term()}]}
-		      | integer() | float() | binary().
+-type msgpack_term() :: [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -53,7 +52,6 @@
 
 % @doc Encode an erlang term into an msgpack binary.
 %      Returns {error, {badarg, term()}} if the input is illegal.
-% @spec pack(Term::msgpack_term()) -> binary() | {error, {badarg, term()}}
 -spec pack(Term::msgpack_term()) -> binary() | {error, {badarg, term()}}.
 pack(Term)->
     try
@@ -67,7 +65,6 @@ pack(Term)->
 %      It only decodes the first msgpack packet contained in the binary; the rest is returned as is.
 %      Returns {error, {badarg, term()}} if the input is corrupted.
 %      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
-% @spec unpack(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}
 -spec unpack(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
 unpack(Bin) when is_binary(Bin) ->
     try
@@ -83,7 +80,6 @@ unpack(Other) ->
 %      It only decodes ALL msgpack packets contained in the binary. No packets should not remain.
 %      Returns {error, {badarg, term()}} if the input is corrupted.
 %      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
-% @spec unpack_all(binary()) -> [msgpack_term()] | {error, incomplete} | {error, {badarg, term()}}
 -spec unpack_all(binary()) -> [msgpack_term()] | {error, incomplete} | {error, {badarg, term()}}.
 unpack_all(Data)->
     try

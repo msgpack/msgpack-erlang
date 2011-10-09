@@ -49,12 +49,12 @@
 -spec start_link(Mod::atom(), [term()]) ->
 			{ok, Pid::pid()} | ignore | {error, Error::term()}.
 start_link(Mod, Options) ->
-    start_link({local, ?SERVER}, Mod, Options).
+    start_link(?SERVER, Mod, Options).
 
 -spec start_link(Id::atom(), Mod::atom(), [term()]) ->
 			{ok, Pid::pid()} | ignore | {error, Error::term()}.
 start_link(Id, Mod, Options) ->
-    gen_server:start_link(Id, ?MODULE, [Mod, Options], []).
+    gen_server:start_link({local,Id}, ?MODULE, [Mod, Options], []).
 
 %%%===================================================================
 %%% gen_server callbacks

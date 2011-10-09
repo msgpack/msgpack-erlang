@@ -53,18 +53,18 @@ start()->
 stop()->
     msgpack_util:stop().
 
--spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])->
-		     {ok, mprc()}|{error,Reason::term()}.
+-spec connect(gen_tcp:ip_address(), Port::(0..65535), Options::[term()])-> {ok, mprc()}|{error,term()}.
 connect(Address, Port, Options)->
-    {ok,S}=gen_udp:open(0, Options),
-    {ok, #mprc{s=S, transport=udp, host=Address, port=Port}}.
-
+    case gen_udp:open(0, Options) of
+	{ok,S}-> {ok, #mprc{s=S, transport=udp, host=Address, port=Port}};
+	{error,R}-> {error,R}
+    end.
+	
 % synchronous calls
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
--spec call(mprc(), Method::atom(), Argv::list()) -> 
-		  {ok, term()} | {error, {atom(), any()}}.
+-spec call(mprc(), Method::atom(), Argv::list()) -> {term(), mprc()} | {error, {atom(), any()}}.
 call(MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     {ok,CallID}=call_async(MPRC,Method,Argv),
     ?MODULE:join(MPRC,CallID).
@@ -94,13 +94,9 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 		{[?MP_TYPE_RESPONSE, CallID, Error, Retval], RemainBin}->
 		    MPRC0 = MPRC#mprc{carry=RemainBin},
 		    msgpack_util:call_done(CallID),
-		    case {Error, Retval} of
-			{nil, Retval} ->
-			    join_(MPRC0, Remain, [{ok,Retval}|Got]);
-			{Error,nil} ->
-			    join_(MPRC0, Remain, [{error,Error}|Got]);
-			_Other -> % malformed message
-			    throw({malform_msg, _Other})
+		    case Error of
+			nil ->	 join_(MPRC0, Remain, [{ok,Retval}|Got]);
+			Error -> join_(MPRC0, Remain, [{error,Error}|Got])
 		    end;
 		{[?MP_TYPE_RESPONSE, CallID0, Error, Retval], RemainBin}->
 		    msgpack_util:insert({CallID0, Error, Retval}),
@@ -142,7 +138,7 @@ notify(MPRC,Method,Argv)->
 	    gen_udp:send(MPRC#mprc.s, MPRC#mprc.host, MPRC#mprc.port, Pack)
     end.
 
--spec close(mprc()) -> ok|{error,term()}.		    
+-spec close(mprc()) -> ok.
 close(Client)-> gen_udp:close(Client#mprc.s).
 
 -spec controlling_process(mprc(), pid())-> ok.

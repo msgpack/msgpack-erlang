@@ -72,8 +72,7 @@ connect(Address, Port, Options)->
 % when method 'Method' doesn't exist in server implementation,
 % it returns {error, {<<"no such method">>, nil}}
 % user func error => {error, {<<"unexpected error">>, nil}}
--spec call(mprc(), Method::atom(), Argv::list()) -> 
-		  {ok, term()} | {error, {atom(), any()}}.
+-spec call(mprc(), Method::atom(), Argv::list()) -> {term(), mprc()} | {error, {atom(), any()}}.
 call(#mprc{transport=tcp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
     mprc_tcp:call(MPRC, Method, Argv);
 call(#mprc{transport=udp}=MPRC, Method, Argv) when is_atom(Method), is_list(Argv) ->
@@ -96,7 +95,7 @@ notify(#mprc{transport=tcp}=MPRC, Method, Argv)->
 notify(#mprc{transport=udp}=MPRC, Method, Argv)->
     mprc_udp:notify(MPRC,Method,Argv).
 
--spec close(mprc()) -> ok|{error,term()}.		    
+-spec close(mprc()) -> ok.
 close(#mprc{transport=tcp}=MPRC)-> mprc_tcp:close(MPRC);
 close(#mprc{transport=udp}=MPRC)-> mprc_udp:close(MPRC).
 

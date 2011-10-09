@@ -193,6 +193,7 @@ handle_notify(Module, M, Argv)->
 		  erlang:apply(Module, Method, Argv)
 	  end).
 
+-spec spawn_request_handler(integer(), atom(), binary(), [term()]) -> pid().
 spawn_request_handler(CallID, Module, M, Argv)->
     Self = self(),
     F= fun()->

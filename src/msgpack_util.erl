@@ -7,7 +7,7 @@
 %%%-------------------------------------------------------------------
 -module(msgpack_util).
 
--export([pppop/2, append_sup/1, append_srv/1]).
+-export([pppop/2]).
 -export([start/0, get_callid/0, insert/1, call_done/1, lookup/1, stop/0]).
 
 -spec pppop(Key::atom(), proplists:proplists())-> {Value::term(), List2::proplists:proplists()}|error.
@@ -21,16 +21,6 @@ pppop(Key,[H|Proplist], Carry)-> pppop(Key, Proplist, [H|Carry]).
 rev_append([], R)->  R;
 rev_append([H|L], R) ->
     rev_append(L, [H|R]).
-
--spec append_sup(atom()) -> atom().
-append_sup(A)-> append_str(A, "_sup").
-
--spec append_srv(atom()) -> atom().
-append_srv(A)-> append_str(A, "_srv").
-
-append_str(A, Str)->
-    L=atom_to_list(A),
-    erlang:list_to_atom(L) ++ Str.
 
 -spec start()-> ok.
 start()->

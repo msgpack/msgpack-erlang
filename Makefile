@@ -14,7 +14,7 @@ compile:
 xref:
 	@./rebar xref
 
-eunit:
+eunit: check
 	@./rebar eunit
 
 clean:
@@ -23,9 +23,9 @@ clean:
 doc:
 	@./rebar doc
 
-check:
-	@echo "you need ./rebar build-plt before make check"
-# @./rebar build-plt
+check: compile
+#	@echo "you need ./rebar build-plt before make check"
+#	@./rebar build-plt
 	@./rebar check-plt
 	@./rebar dialyze
 
