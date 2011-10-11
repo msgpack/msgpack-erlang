@@ -83,17 +83,20 @@ unpack(Other) ->
 -spec unpack_all(binary()) -> [msgpack_term()] | {error, incomplete} | {error, {badarg, term()}}.
 unpack_all(Data)->
     try
-	unpack_all_(Data)
+	unpack_all_(Data, [])
     catch
 	throw:Exception ->
 	    {error, Exception}
     end.
-unpack_all_(Data)->
+
+unpack_all_(Data, Carry)->
     case unpack_(Data) of
 	{ Term, <<>> } ->
-	    [Term];
+	    lists:reverse([Term|Carry]);
+	{ _, Binary } when byte_size(Binary) =:= byte_size(Data) ->
+	    { error, incomplete };
 	{ Term, Binary } when is_binary(Binary) ->
-	    [Term|unpack_all_(Binary)]
+	    unpack_all_(Binary,[Term|Carry])
     end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
