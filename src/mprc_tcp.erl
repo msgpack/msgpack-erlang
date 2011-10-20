@@ -111,7 +111,7 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 		{error, incomplete} ->
 		    {ok, PackedMsg}  = gen_tcp:recv(MPRC#mprc.s, 0),
 		    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
-		    join_(MPRC#mprc{carry=NewBin}, Remain, Got);
+		    join_(MPRC#mprc{carry=NewBin}, [CallID|Remain], Got);
 		{error, Reason} ->
 		    {error, Reason}
 	    end;

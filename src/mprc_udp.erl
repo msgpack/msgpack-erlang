@@ -108,7 +108,7 @@ join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->
 %		    Host=MPRC#mprc.host,
 		    Port=MPRC#mprc.port, 
 		    NewBin = <<(MPRC#mprc.carry)/binary, PackedMsg/binary>>,
-		    join_(MPRC#mprc{carry=NewBin}, Remain, Got);
+		    join_(MPRC#mprc{carry=NewBin}, [CallID|Remain], Got);
 		{error, Reason} ->
 		    {error, Reason}
 	    end;
