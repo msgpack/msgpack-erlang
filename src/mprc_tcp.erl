@@ -85,8 +85,10 @@ call_async(MPRC,Method,Argv)->
 -spec join(mprc(), integer() | [integer()]) -> {term(), mprc} | {[term()], mprc()} | {error, term()}.
 join(MPRC, CallIDs) when is_list(CallIDs)-> join_(MPRC, CallIDs, []);
 join(MPRC, CallID)-> 
-    {[Term], MPRC0} = join_(MPRC, [CallID], []),
-    {Term, MPRC0}.
+    case join_(MPRC, [CallID], []) of
+	{[], MPRC0} ->    {error, unknown_callid};
+	{[Term], MPRC0} ->{Term, MPRC0}
+    end.
 
 join_(MPRC, [], Got)-> {Got, MPRC};
 join_(MPRC, [CallID|Remain], Got) when byte_size(MPRC#mprc.carry) > 0 ->

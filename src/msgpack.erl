@@ -333,6 +333,8 @@ map_test()->
     Map = {[ {X, X*2} || X <- Ints ] ++ [{<<"hage">>, 324}, {43542, [nil, true, false]}]},
     {Map2, <<>>} = msgpack:unpack(msgpack:pack(Map)),
     ?assertEqual(Map, Map2),
+    {Empty,<<>>} = msgpack:unpack(msgpack:pack({[]})),
+    ?assertEqual({[]}, Empty),
     ok.
 
 other_test()->
