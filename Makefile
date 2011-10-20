@@ -14,7 +14,7 @@ compile:
 xref:
 	@./rebar xref
 
-eunit: check
+eunit:
 	@./rebar eunit
 
 clean:
