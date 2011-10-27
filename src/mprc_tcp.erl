@@ -82,12 +82,12 @@ call_async(MPRC,Method,Argv)->
 	    {ok,CallID}
     end.
 
--spec join(mprc(), integer() | [integer()]) -> {term(), mprc} | {[term()], mprc()} | {error, term()}.
+-spec join(mprc(), integer() | [integer()]) -> {term(), #mprc{}} | {[term()], mprc()} | {error, term()}.
 join(MPRC, CallIDs) when is_list(CallIDs)-> join_(MPRC, CallIDs, []);
 join(MPRC, CallID)-> 
     case join_(MPRC, [CallID], []) of
-	{[], MPRC0} ->    {error, unknown_callid};
-	{[Term], MPRC0} ->{Term, MPRC0}
+	{[], MPRC0} ->     {[], MPRC0};
+	{[Term], MPRC0} -> {Term, MPRC0}
     end.
 
 join_(MPRC, [], Got)-> {Got, MPRC};

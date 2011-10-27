@@ -19,7 +19,7 @@
 
 -spec start_link(atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Module, Options)->
-    start_link({local, ?MODULE}, Module, Options).
+    start_link(?MODULE, Module, Options).
 
 -spec start_link(term(), atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Name,Module,Options)->
