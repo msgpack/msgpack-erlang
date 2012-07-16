@@ -58,6 +58,7 @@ start_link(Mod, Options) ->
 start_link(Id, Mod, Options) ->
     gen_server:start_link({local,Id}, ?MODULE, [Mod, Options], []).
 
+
 %%%===================================================================
 %%% gen_server callbacks
 %%%===================================================================
@@ -77,6 +78,7 @@ start_link(Id, Mod, Options) ->
 init([Mod,Options]) ->
     {Host,Options0} = msgpack_util:pppop(host,Options),
     {Port,_Options1} = msgpack_util:pppop(port,Options0),
+
     init_(Mod,Host,Port).
 
 init_(Mod, Host, Port) when is_atom(Host)->
@@ -87,14 +89,12 @@ init_(Mod, Host, Port) when is_list(Host)->
     init_(Mod, Addr, Port);
 init_(Mod, Addr, Port) when is_atom(Mod), 0<Port, Port<65535, is_tuple(Addr)->
     Opts = [binary, {reuseaddr, true}, {active, false}, {ip, Addr}],
-%    ?debugVal(Opts),
     case gen_udp:open(Port,Opts) of % FIXME: inet6
 	{ok, Socket} ->
 	    %%Create first accepting process
 	    inet:setopts(Socket,[{active,once}]),
 	    {ok, #state{socket = Socket, module = Mod}};
 	{error, Reason} ->
-	    ?debugVal(Reason),
 	    {stop, Reason}
     end.
 

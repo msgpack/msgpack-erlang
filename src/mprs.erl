@@ -10,7 +10,7 @@
 -export([start_link/2, start_link/3,
 	 stop/0, stop/1]).
 -include("msgpack_rpc.hrl").
-
+-include_lib("eunit/include/eunit.hrl").
 -record(options, 
 	{ transport = tcp :: transport(),
 	  ip = inet:: inet | inet6,
@@ -19,7 +19,7 @@
 
 -spec start_link(atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Module, Options)->
-    start_link({local, ?MODULE}, Module, Options).
+    start_link(Module, Module, Options).
 
 -spec start_link(term(), atom(), maybe_improper_list())-> {ok, pid()}.
 start_link(Name,Module,Options)->
