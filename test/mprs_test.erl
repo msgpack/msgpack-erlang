@@ -11,7 +11,6 @@
 
 easy_test()->
     {ok,Pid}=mprs:start_link(sample_srv, [{host,localhost},{port,9199}]),
-
     ok=mprc:start(),
     {ok, Pid2}=gen_msgpack_rpc:start_link({local,?MODULE},?MODULE,localhost,9199,[tcp]),
     
