@@ -25,11 +25,9 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 
 ## TODO
 
-- spawn in Request
 - session TIMEOUTs for client and server
 - where do I make <<"nil">> atom??
 - error handling 
--- what if happens when badarg/noproc/bad_clause, and exceptions.
 -- check Msgpack-RPC spec of error handling
 - crosslang test
 -- Ruby: msgpack-rpc 0.4.5 can't access while 0.4.4 works
@@ -39,5 +37,4 @@ GNU Make, Erlang, (optional)MessagePack-RPC/C++
 - SCTP/SSL/zip and more...
 - rewrite tutorial and README
 - release handling (/release/*.appup)
-- full-spec type/spec notation
 - longrun test
