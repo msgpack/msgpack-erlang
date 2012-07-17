@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2009-2011 UENISHI Kota
+%% Copyright (C) 2009-2012 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
@@ -155,7 +155,7 @@ pack_int_(N) when N > -128 ->
 pack_int_(N) when N > -32768 ->
     << 16#D1:8, N:16/big-signed-integer-unit:1 >>;
 % int 32
-pack_int_(N) when N > -16#FFFFFFFF ->
+pack_int_(N) when N > -16#80000000 ->
     << 16#D2:8, N:32/big-signed-integer-unit:1 >>;
 % int 64
 pack_int_(N) ->
@@ -298,6 +298,7 @@ test_data()->
     [true, false, nil,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
      -1, -23, -512, -1230, -567898, -16#FFFFFFFFFF,
+     -16#80000001,
      123.123, -234.4355, 1.0e-34, 1.0e64,
      [23, 234, 0.23],
      <<"hogehoge">>, <<"243546rf7g68h798j", 0, 23, 255>>,
