@@ -23,7 +23,7 @@ clean:
 doc:
 	@./rebar doc
 
-check: compile
+check: compile xref
 #	@echo "you need ./rebar build-plt before make check"
 #	@./rebar build-plt
 	@./rebar check-plt
