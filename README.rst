@@ -2,7 +2,7 @@
 MessagePack Erlang
 ##################
 
-.. image:: https://secure.travis-ci.org/msgpack/msgpack-erlang.png?branch=develop
+.. image:: https://secure.travis-ci.org/msgpack/msgpack-erlang.png
 
 prequisites for runtime
 -----------------------
