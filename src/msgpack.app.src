@@ -1,6 +1,6 @@
 {application, msgpack,
  [{description, "MessagePack serializer/deserializer"},
-  {vsn, "0.0.2"},
+  {vsn, "0.0.3"},
   {modules, 
    [msgpack]
   },
