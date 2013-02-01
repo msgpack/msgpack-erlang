@@ -15,8 +15,9 @@ choose_type() ->
            float(),
            nil(), boolean(),
            fix_raw(), raw16(), raw32(),
-           fix_array(),
-           fix_map()]).
+           fix_array(), %array16(), array32(),
+           fix_map() %, map16(), map32()
+          ]).
 
 positive_fixnum() ->
     choose(0, 127).

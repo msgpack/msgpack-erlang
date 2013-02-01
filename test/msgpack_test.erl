@@ -8,9 +8,9 @@
 %%%-------------------------------------------------------------------
 -module(msgpack_test).
 
--ifdef(DO_MSGPACK_CROSSLANG_TEST).
-
 -include_lib("eunit/include/eunit.hrl").
+
+-ifdef(DO_MSGPACK_CROSSLANG_TEST).
 
 test_data()->
     [true, false, nil,
@@ -69,3 +69,18 @@ unknown_test_freezed_test_dont_do_this()->
     port_close(Port).
 
 -endif.
+
+issue_5_test() ->
+    %% {'type':"workers", 'data':[{'workerid': "std.1", 'slots':[] }]}
+    Term = {[
+             {<<"type">>,<<"workers">>},
+             {<<"data">>,[
+                          {[{<<"workerid">>,<<"std.1">>},{<<"slots">>,[]}]}
+                         ]
+             }
+            ]},
+    ?assertEqual({Term, <<>>}, msgpack:unpack(msgpack:pack(Term))),
+    Bin = <<130,164,116,121,112,101,167,119,111,114,107,101,
+            114,115,164,100,97,116,97,145,145,130,168,119,111,114,
+            107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
+    ?assertEqual(Bin, msgpack:pack(Term)).

@@ -176,7 +176,7 @@ pack_double(F) ->
 % raw bytes
 pack_raw(Bin) ->
     case byte_size(Bin) of
-	Len when Len < 6->
+	Len when Len < 32->
 	    << 2#101:3, Len:5, Bin/binary >>;
 	Len when Len < 16#10000 -> % 65536
 	    << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
