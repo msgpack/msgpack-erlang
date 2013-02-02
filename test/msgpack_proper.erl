@@ -57,7 +57,7 @@ fix_array() ->
          proper_gen:list_gen(Integer, choose_type())).
 
 array16() ->
-     proper_gen:list_gen(16, choose_type()).
+    proper_gen:list_gen(16, choose_type()).
 
 array32() ->
     [ N || N <- lists:seq(0, 16#010000)].
@@ -67,19 +67,19 @@ fix_map() ->
          {proper_gen:list_gen(Integer, {choose_type(), choose_type()})}).
 
 map16() ->
-     proper_gen:list_gen(16, {choose_type(), choose_type()}).
+    proper_gen:list_gen(16, {choose_type(), choose_type()}).
 
 map32() ->
     [{N, N * N} || N <- lists:seq(0, 16#010000)].
 
 fix_raw() ->
     ?LET(Integer, choose(0, 31),
-        ?LET(Binary, binary(Integer), Binary)).
+         ?LET(Binary, binary(Integer), Binary)).
 
 raw16() ->
     ?LET(Integer, uint16(),
-        ?LET(Binary, binary(Integer), Binary)).
+         ?LET(Binary, binary(Integer), Binary)).
 
 raw32() ->
     ?LET(Integer, uint32(),
-        ?LET(Binary, binary(Integer), Binary)).
+         ?LET(Binary, binary(Integer), Binary)).
