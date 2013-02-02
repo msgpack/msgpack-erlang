@@ -7,7 +7,7 @@ MessagePack Erlang
 prequisites for runtime
 -----------------------
 
-Erlang runtime system (http://erlang.org/)
+Erlang runtime system ( http://erlang.org/ ), >= R15B -- rebar won't work.
 
 rebar.config
 ------------
