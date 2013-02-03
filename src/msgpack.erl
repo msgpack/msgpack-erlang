@@ -1,7 +1,7 @@
 %%
 %% MessagePack for Erlang
 %%
-%% Copyright (C) 2009-2012 UENISHI Kota
+%% Copyright (C) 2009-2013 UENISHI Kota
 %%
 %%    Licensed under the Apache License, Version 2.0 (the "License");
 %%    you may not use this file except in compliance with the License.
@@ -34,17 +34,13 @@
 %% @end
 
 -module(msgpack).
--author('kuenishi+msgpack@gmail.com').
 
--export([pack/1, unpack/1, unpack_all/1]).
+-export([pack/1, unpack/1, unpack_stream/1]).
 
-% @type msgpack_map() = [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 -type msgpack_map() :: {[{msgpack_term(), msgpack_term()}]}.
 
-% @type msgpack_term() = [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 % Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() | integer() | float() | binary().
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % external APIs
@@ -65,39 +61,34 @@ pack(Term)->
 %      It only decodes the first msgpack packet contained in the binary; the rest is returned as is.
 %      Returns {error, {badarg, term()}} if the input is corrupted.
 %      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
--spec unpack(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
-unpack(Bin) when is_binary(Bin) ->
+-spec unpack_stream(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
+unpack_stream(Bin) when is_binary(Bin) ->
     try
 	unpack_(Bin)
     catch
 	throw:Exception ->
 	    {error, Exception}
     end;
-unpack(Other) ->
+unpack_stream(Other) ->
     {error, {badarg, Other}}.
 
 % @doc Decode an msgpack binary into an erlang terms.
-%      It only decodes ALL msgpack packets contained in the binary. No packets should not remain.
+%      It only decodes ONLY ONE msgpack packets contained in the binary. No packets should not remain.
 %      Returns {error, {badarg, term()}} if the input is corrupted.
 %      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
--spec unpack_all(binary()) -> [msgpack_term()] | {error, incomplete} | {error, {badarg, term()}}.
-unpack_all(Data)->
-    try
-	unpack_all_(Data, [])
-    catch
-	throw:Exception ->
-	    {error, Exception}
-    end.
+-spec unpack(binary()) -> {ok, msgpack_term()}
+                              | {error, not_just_binary} % a term deserilized, but binary remains
+                              | {error, incomplete}      % too few binary to deserialize complete binary
+                              | {error, {badarg, term()}}.
+unpack(Data) when is_binary(Data) ->
+    case unpack_stream(Data) of
+        {error, _} = E -> E;
+        {Term, <<>>} -> {ok, Term};
+        {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
+    end;
+unpack(Badarg) ->
+    {error, {badarg, Badarg}}.
 
-unpack_all_(Data, Carry)->
-    case unpack_(Data) of
-	{ Term, <<>> } ->
-	    lists:reverse([Term|Carry]);
-	{ _, Binary } when byte_size(Binary) =:= byte_size(Data) ->
-	    { error, incomplete };
-	{ Term, Binary } when is_binary(Binary) ->
-	    unpack_all_(Binary,[Term|Carry])
-    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % internal APIs
@@ -291,7 +282,7 @@ unpack_(Bin) ->
 test_([]) -> 0;
 test_([Term|Rest])->
     Pack = msgpack:pack(Term),
-    ?assertEqual({Term, <<>>}, msgpack:unpack( Pack )),
+    ?assertEqual({ok, Term}, msgpack:unpack( Pack )),
     1+test_(Rest).
 
 test_data()->
@@ -314,7 +305,7 @@ basic_test()->
     Passed = length(Tests).
 
 test_p(Len,Term,OrigBin,Len) ->
-    {Term, <<>>}=msgpack:unpack(OrigBin);
+    {ok, Term}=msgpack:unpack(OrigBin);
 test_p(I,_,OrigBin,Len) when I < Len->
     <<Bin:I/binary, _/binary>> = OrigBin,
     ?assertEqual({error,incomplete}, msgpack:unpack(Bin)).
@@ -327,14 +318,14 @@ partial_test()-> % error handling test.
 
 long_test()->
     Longer = lists:seq(0, 655),
-    {Longer, <<>>} = msgpack:unpack(msgpack:pack(Longer)).
+    {ok, Longer} = msgpack:unpack(msgpack:pack(Longer)).
 
 map_test()->
     Ints = lists:seq(0, 65),
     Map = {[ {X, X*2} || X <- Ints ] ++ [{<<"hage">>, 324}, {43542, [nil, true, false]}]},
-    {Map2, <<>>} = msgpack:unpack(msgpack:pack(Map)),
+    {ok, Map2} = msgpack:unpack(msgpack:pack(Map)),
     ?assertEqual(Map, Map2),
-    {Empty,<<>>} = msgpack:unpack(msgpack:pack({[]})),
+    {ok, Empty} = msgpack:unpack(msgpack:pack({[]})),
     ?assertEqual({[]}, Empty),
     ok.
 
@@ -344,7 +335,7 @@ other_test()->
 benchmark_test()->
     Data=[test_data() || _ <- lists:seq(0, 10000)],
     S=?debugTime("  serialize", msgpack:pack(Data)),
-    {Data,<<>>}=?debugTime("deserialize", msgpack:unpack(S)),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S)),
     ?debugFmt("for ~p KB test data.", [byte_size(S) div 1024]).
 
 error_test()->
@@ -356,9 +347,9 @@ long_binary_test()->
     A = msgpack:pack(1),
     B = msgpack:pack(10),
     C = msgpack:pack(100),
-    {1, Rem0} = msgpack:unpack(<<A/binary, B/binary, C/binary>>),
-    {10, Rem1} = msgpack:unpack(Rem0),
-    {100, _Rem2} = msgpack:unpack(Rem1),
+    {1, Rem0} = msgpack:unpack_stream(<<A/binary, B/binary, C/binary>>),
+    {10, Rem1} = msgpack:unpack_stream(Rem0),
+    {100, _Rem2} = msgpack:unpack_stream(Rem1),
     ok.
 
 -endif.

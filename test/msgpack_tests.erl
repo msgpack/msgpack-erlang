@@ -9,14 +9,14 @@ msgpack_props_test_() ->
 
 unpack_test_() ->
     [
-        {"not binary",
-            ?_assertEqual({error, {badarg, []}}, unpack([]))},
+     {"not binary",
+      ?_assertEqual({error, {badarg, []}}, unpack([]))},
 
-        {"incomplete: null binary",
-            ?_assertEqual({error, incomplete}, unpack(<<>>))},
-
-        {"incomplete: unknown binary",
-            ?_assertEqual({error, incomplete}, unpack(<<16#DA>>))}
+     {"incomplete: null binary",
+      ?_assertEqual({error, incomplete}, unpack(<<>>))},
+     
+     {"incomplete: unknown binary",
+      ?_assertEqual({error, incomplete}, unpack(<<16#DA>>))}
     ].
 
 array_test_()->
@@ -25,19 +25,19 @@ array_test_()->
             fun() ->
                     List = lists:seq(0, 16),
                     Binary = pack(List),
-                    ?assertEqual({List, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, List}, unpack(Binary))
             end},
         {"length 32",
             fun() ->
                     List = lists:seq(0, 16#010000),
                     Binary = pack(List),
-                    ?assertEqual({List, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, List}, unpack(Binary))
             end},
         {"empty",
             fun() ->
                     EmptyList = [],
                     Binary = pack(EmptyList),
-                    ?assertEqual({EmptyList, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, EmptyList}, unpack(Binary))
             end}
     ].
 
@@ -48,19 +48,19 @@ map_test_()->
             fun() ->
                     Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
                     Binary = pack(Map),
-                    ?assertEqual({Map, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, Map}, unpack(Binary))
             end},
         {"length 32",
             fun() ->
                     Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
                     Binary = pack(Map),
-                    ?assertEqual({Map, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, Map}, unpack(Binary))
             end},
         {"empty",
             fun() ->
                     EmptyMap = {[]},
                     Binary = pack(EmptyMap),
-                    ?assertEqual({EmptyMap, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, EmptyMap}, unpack(Binary))
             end}
     ].
 
@@ -70,7 +70,7 @@ int_test_() ->
             fun() ->
                     Term = -2147483649,
                     Binary = pack(Term),
-                    ?assertEqual({Term, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, Term}, unpack(Binary))
             end}
     ].
 
@@ -92,7 +92,7 @@ binary_test_() ->
         {"0 byte",
             fun() ->
                     Binary = pack(<<>>),
-                    ?assertEqual({<<>>, <<>>}, unpack(Binary))
+                    ?assertEqual({ok, <<>>}, unpack(Binary))
             end}
     ].
 
