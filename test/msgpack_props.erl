@@ -9,7 +9,7 @@ prop_type() ->
         ?FORALL(Term, choose_type(),
                 begin
                     Binary = msgpack:pack(Term),
-                    {Term1, <<>>} = msgpack:unpack(Binary),
+                    {ok, Term1} = msgpack:unpack(Binary),
                     Term =:= Term1
                 end)).
 

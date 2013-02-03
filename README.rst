@@ -19,10 +19,21 @@ rebar.config
        {git, "git://github.com/msgpack/msgpack-erlang.git", "master"}}
    ]}.
 
+Simple deserialization
+
 ::
 
    Ham = msgpack:pack(Spam),
-   {Spam, <<>>} = msgpack:unpack(Ham).
+   {ok, Spam} = msgpack:unpack(Ham).
+
+Stream deserialization
+
+::
+
+   {Term0, Rest0} = msgpack:unpack_stream(Binary),
+   {Term1, Rest1} = msgpack:unpack_stream(Rest0),
+   ...
+
 
 License
 -------

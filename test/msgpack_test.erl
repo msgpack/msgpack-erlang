@@ -79,7 +79,7 @@ issue_5_test() ->
                          ]
              }
             ]},
-    ?assertEqual({Term, <<>>}, msgpack:unpack(msgpack:pack(Term))),
+    ?assertEqual({ok, Term}, msgpack:unpack(msgpack:pack(Term))),
 
     Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
             114,115,164,100,97,116,97,145,130,168,119,111,114,
