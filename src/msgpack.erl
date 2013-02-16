@@ -42,6 +42,10 @@
 % Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 
+%% for export
+-export_type([object/0]).
+-type object() :: msgpack_term().
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % external APIs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
