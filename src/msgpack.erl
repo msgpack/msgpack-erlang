@@ -338,18 +338,6 @@ map_test()->
 other_test()->
     ?assertEqual({error,incomplete},msgpack:unpack(<<>>)).
 
-benchmark0_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
-    S=?debugTime("  serialize", msgpack:pack(Data)),
-    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S)),
-    ?debugFmt("for ~p KB test data(msgpack).", [byte_size(S) div 1024]).
-
-benchmark1_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
-    S=?debugTime("  serialize", msgpack_nif:pack(Data)),
-    {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
-    ?debugFmt("for ~p KB test data.(msgpack_nif).", [byte_size(S) div 1024]).
-
 error_test()->
     ?assertEqual({error,{badarg, atom}}, msgpack:pack(atom)),
     Term = {"hoge", "hage", atom},
