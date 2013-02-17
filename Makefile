@@ -1,4 +1,4 @@
-.PHONY: compile xref eunit clean doc check make
+.PHONY: compile xref eunit clean doc check make deps
 
 all: compile
 
@@ -8,13 +8,16 @@ ma: all
 mak: all
 make: all
 
+deps:
+	@./rebar update-deps get-deps
+
 compile:
 	@./rebar compile
 
 xref:
 	@./rebar xref
 
-eunit:
+eunit: compile
 	@./rebar skip_deps=true eunit
 
 clean:
@@ -22,6 +25,9 @@ clean:
 
 doc:
 	@./rebar doc
+
+bench: compile
+	@./rebar euni skip_deps=true suites=bench_tests
 
 check: compile xref
 #	@echo "you need ./rebar build-plt before make check"
