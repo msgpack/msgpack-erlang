@@ -42,6 +42,10 @@
 % Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() | integer() | float() | binary().
 
+%% for export
+-export_type([object/0]).
+-type object() :: msgpack_term().
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % external APIs
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -279,12 +283,6 @@ unpack_(Bin) ->
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
-test_([]) -> 0;
-test_([Term|Rest])->
-    Pack = msgpack:pack(Term),
-    ?assertEqual({ok, Term}, msgpack:unpack( Pack )),
-    1+test_(Rest).
-
 test_data()->
     [true, false, nil,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
@@ -301,8 +299,16 @@ test_data()->
 
 basic_test()->
     Tests = test_data(),
-    Passed = test_(Tests),
-    Passed = length(Tests).
+    MatchFun0 = fun(Term) ->
+                        {ok, Term} = msgpack:unpack(msgpack:pack(Term)),
+                        Term
+                end,
+    MatchFun1 = fun(Term) ->
+                        {ok, Term} = msgpack_nif:unpack(msgpack_nif:pack(Term)),
+                        Term
+                end,
+    Tests = lists:map(MatchFun0, Tests),
+    Tests = lists:map(MatchFun1, Tests).
 
 test_p(Len,Term,OrigBin,Len) ->
     {ok, Term}=msgpack:unpack(OrigBin);
@@ -332,11 +338,17 @@ map_test()->
 other_test()->
     ?assertEqual({error,incomplete},msgpack:unpack(<<>>)).
 
-benchmark_test()->
+benchmark0_test()->
     Data=[test_data() || _ <- lists:seq(0, 10000)],
     S=?debugTime("  serialize", msgpack:pack(Data)),
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S)),
-    ?debugFmt("for ~p KB test data.", [byte_size(S) div 1024]).
+    ?debugFmt("for ~p KB test data(msgpack).", [byte_size(S) div 1024]).
+
+benchmark1_test()->
+    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    S=?debugTime("  serialize", msgpack_nif:pack(Data)),
+    {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
+    ?debugFmt("for ~p KB test data.(msgpack_nif).", [byte_size(S) div 1024]).
 
 error_test()->
     ?assertEqual({error,{badarg, atom}}, msgpack:pack(atom)),
