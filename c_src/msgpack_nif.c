@@ -99,8 +99,6 @@ bool msgpack_pack_erl_nif_term(msgpack_packer* pk,
       enif_get_list_cell(env, cur, &head, &tail);
       bool result = msgpack_pack_erl_nif_term(pk, env, head);
       if(!result){
-        
-        printf("bad %d %d\n", __LINE__, i);
         return false;
       }
       i++;
@@ -113,6 +111,7 @@ bool msgpack_pack_erl_nif_term(msgpack_packer* pk,
     const ERL_NIF_TERM * array;
     enif_get_tuple(env, t, &arity, &array);
     if(arity != 1) return false;
+
     
     // array[0] is an erlang list
     unsigned s = 0;
@@ -138,6 +137,7 @@ bool msgpack_pack_erl_nif_term(msgpack_packer* pk,
       cur = tail;
     }
 
+    /**
   }else if(enif_is_exception(env, t)){
     return false;
 
@@ -152,6 +152,7 @@ bool msgpack_pack_erl_nif_term(msgpack_packer* pk,
 
   }else if(enif_is_ref(env, t)){
     return false;
+    **/
   }else{
     return false;
   }

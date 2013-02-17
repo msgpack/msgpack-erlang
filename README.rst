@@ -37,7 +37,7 @@ Stream deserialization
 experimental feature: NIF (de)serializer
 ----------------------------------------
 
-since 0.1.1 - only tested in MacOS
+since 0.1.1 - only tested in MacOS, Linux
 
 ::
 
@@ -46,10 +46,10 @@ since 0.1.1 - only tested in MacOS
   src/msgpack.erl:345:<0.131.0>: for 1884 KB test data(msgpack).
   src/msgpack.erl:349:<0.131.0>:   serialize: 0.019 s
   src/msgpack.erl:350:<0.131.0>: deserialize: 0.036 s
-  src/msgpack.erl:351:<0.131.0>: for 1884 KB test data.(msgpack_nif).
+  src/msgpack.erl:351:<0.131.0>: for 1884 KB test data(msgpack_nif).
   src/msgpack.erl:355:<0.131.0>:   serialize: 0.043 s
   src/msgpack.erl:356:<0.131.0>: deserialize: 0.027 s
-  src/msgpack.erl:357:<0.131.0>: for 3828 KB test data.(t2b/b2t).
+  src/msgpack.erl:357:<0.131.0>: for 3828 KB test data(t2b/b2t).
 
 
 License

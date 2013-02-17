@@ -6,7 +6,7 @@
 %%% @end
 %%% Created : 18 Feb 2013 by UENISHI Kota <kuenishi@gmail.com>
 %%%-------------------------------------------------------------------
--module(bench_test).
+-module(bench_tests).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
