@@ -41,12 +41,15 @@ since 0.1.1 - only tested in MacOS
 
 ::
 
-  src/msgpack.erl:343:<0.127.0>:   serialize: 0.865 s
-  src/msgpack.erl:344:<0.127.0>: deserialize: 0.784 s
-  src/msgpack.erl:345:<0.127.0>: for 1884 KB test data(msgpack).
-  src/msgpack.erl:349:<0.127.0>:   serialize: 0.027 s
-  src/msgpack.erl:350:<0.127.0>: deserialize: 0.071 s
-  src/msgpack.erl:351:<0.127.0>: for 1884 KB test data.(msgpack_nif).
+  src/msgpack.erl:343:<0.131.0>:   serialize: 0.405 s
+  src/msgpack.erl:344:<0.131.0>: deserialize: 0.470 s
+  src/msgpack.erl:345:<0.131.0>: for 1884 KB test data(msgpack).
+  src/msgpack.erl:349:<0.131.0>:   serialize: 0.019 s
+  src/msgpack.erl:350:<0.131.0>: deserialize: 0.036 s
+  src/msgpack.erl:351:<0.131.0>: for 1884 KB test data.(msgpack_nif).
+  src/msgpack.erl:355:<0.131.0>:   serialize: 0.043 s
+  src/msgpack.erl:356:<0.131.0>: deserialize: 0.027 s
+  src/msgpack.erl:357:<0.131.0>: for 3828 KB test data.(t2b/b2t).
 
 
 License
