@@ -201,11 +201,11 @@ pack_array([A, B, C, D]) ->
 pack_array(L) ->
     case length(L) of
         Len when Len < 16 ->
-            << 2#1001:4, Len:4/integer-unit:1, (pack_array_(L, <<>>))/binary >>;
+            pack_array_(L, <<2#1001:4, Len:4/integer-unit:1>>);
         Len when Len < 16#10000 -> % 65536
-            << 16#DC:8, Len:16/big-unsigned-integer-unit:1, (pack_array_(L, <<>>))/binary >>;
+            pack_array_(L, <<16#DC:8, Len:16/big-unsigned-integer-unit:1>>);
         Len ->
-            << 16#DD:8, Len:32/big-unsigned-integer-unit:1, (pack_array_(L, <<>>))/binary >>
+            pack_array_(L, <<16#DD:8, Len:32/big-unsigned-integer-unit:1>>)
     end.
 
 pack_array_([], Acc) ->
@@ -254,9 +254,9 @@ pack_map(M)->
         Len when Len < 16 ->
             pack_map_(M, <<2#1000:4, Len:4/integer-unit:1>>);
         Len when Len < 16#10000 -> % 65536
-            << 16#DE:8, Len:16/big-unsigned-integer-unit:1, (pack_map_(M, <<>>))/binary >>;
+            pack_map_(M, <<16#DE:8, Len:16/big-unsigned-integer-unit:1>>);
         Len ->
-            << 16#DF:8, Len:32/big-unsigned-integer-unit:1, (pack_map_(M, <<>>))/binary >>
+            pack_map_(M, <<16#DF:8, Len:32/big-unsigned-integer-unit:1>>)
     end.
 
 pack_map_([], Acc) -> Acc;
