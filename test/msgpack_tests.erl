@@ -14,7 +14,7 @@ unpack_test_() ->
 
      {"incomplete: null binary",
       ?_assertEqual({error, incomplete}, unpack(<<>>))},
-     
+
      {"incomplete: unknown binary",
       ?_assertEqual({error, incomplete}, unpack(<<16#DA>>))}
     ].
@@ -46,19 +46,19 @@ map_test_()->
     [
         {"length 16",
             fun() ->
-                    Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
+                    Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
                     Binary = pack(Map),
                     ?assertEqual({ok, Map}, unpack(Binary))
             end},
         {"length 32",
             fun() ->
-                    Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
+                    Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
                     Binary = pack(Map),
                     ?assertEqual({ok, Map}, unpack(Binary))
             end},
         {"empty",
             fun() ->
-                    EmptyMap = {[]},
+                    EmptyMap = [{}],
                     Binary = pack(EmptyMap),
                     ?assertEqual({ok, EmptyMap}, unpack(Binary))
             end}

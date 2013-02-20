@@ -37,7 +37,7 @@
 
 -export([pack/1, unpack/1, unpack_stream/1]).
 
--type msgpack_map() :: {[{msgpack_term(), msgpack_term()}]}.
+-type msgpack_map() :: [{msgpack_term(), msgpack_term()}] | [{}].
 
 % Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() | integer() | float() | binary().
@@ -114,10 +114,12 @@ pack_(false) ->
     << 16#C2:8 >>;
 pack_(Bin) when is_binary(Bin) ->
     pack_raw(Bin);
+pack_([{}] = Map) ->
+    pack_map(Map);
+pack_([{_,_} | _] = Map) ->
+    pack_map(Map);
 pack_(List)  when is_list(List) ->
     pack_array(List);
-pack_({Map}) when is_list(Map) ->
-    pack_map(Map);
 pack_(Other) ->
     throw({badarg, Other}).
 
@@ -204,11 +206,13 @@ unpack_array_(Bin, Len, Acc) ->
     unpack_array_(Rest, Len-1, [Term|Acc]).
 
 
--spec pack_map(M::[{msgpack_term(),msgpack_term()}]) -> binary() | no_return().
+-spec pack_map(M::msgpack_map()) -> binary() | no_return().
+pack_map([{}])->
+    << 2#1000:4, 0:4/integer-unit:1, <<>>/binary >>;
 pack_map(M)->
     case length(M) of
-	Len when Len < 16 ->
-	    << 2#1000:4, Len:4/integer-unit:1, (pack_map_(M, <<>>))/binary >>;
+        Len when Len < 16 ->
+            << 2#1000:4, Len:4/integer-unit:1, (pack_map_(M, <<>>))/binary >>;
 	Len when Len < 16#10000 -> % 65536
 	    << 16#DE:8, Len:16/big-unsigned-integer-unit:1, (pack_map_(M, <<>>))/binary >>;
 	Len ->
@@ -220,9 +224,10 @@ pack_map_([{Key,Value}|Tail], Acc) ->
     pack_map_(Tail, << Acc/binary, (pack_(Key))/binary, (pack_(Value))/binary>>).
 
 % Users SHOULD NOT send too long list: this uses lists:reverse/1
--spec unpack_map_(binary(), non_neg_integer(), [{msgpack_term(), msgpack_term()}]) ->
-			 {{[{msgpack_term(), msgpack_term()}]}, binary()} | no_return().
-unpack_map_(Bin, 0,   Acc) -> {{lists:reverse(Acc)}, Bin};
+-spec unpack_map_(binary(), non_neg_integer(), msgpack_map()) ->
+                         {msgpack_map(), binary()} | no_return().
+unpack_map_(Bin, 0,   []) -> {[{}], Bin};
+unpack_map_(Bin, 0,   Acc) -> {lists:reverse(Acc), Bin};
 unpack_map_(Bin, Len, Acc) ->
     {Key, Rest} = unpack_(Bin),
     {Value, Rest2} = unpack_(Rest),
@@ -312,6 +317,7 @@ basic_test()->
 
 test_p(Len,Term,OrigBin,Len) ->
     {ok, Term}=msgpack:unpack(OrigBin);
+
 test_p(I,_,OrigBin,Len) when I < Len->
     <<Bin:I/binary, _/binary>> = OrigBin,
     ?assertEqual({error,incomplete}, msgpack:unpack(Bin)).
@@ -328,11 +334,11 @@ long_test()->
 
 map_test()->
     Ints = lists:seq(0, 65),
-    Map = {[ {X, X*2} || X <- Ints ] ++ [{<<"hage">>, 324}, {43542, [nil, true, false]}]},
+    Map = [ {X, X*2} || X <- Ints ] ++ [{<<"hage">>, 324}, {43542, [nil, true, false]}],
     {ok, Map2} = msgpack:unpack(msgpack:pack(Map)),
     ?assertEqual(Map, Map2),
-    {ok, Empty} = msgpack:unpack(msgpack:pack({[]})),
-    ?assertEqual({[]}, Empty),
+    {ok, Empty} = msgpack:unpack(msgpack:pack([{}])),
+    ?assertEqual([{}], Empty),
     ok.
 
 other_test()->

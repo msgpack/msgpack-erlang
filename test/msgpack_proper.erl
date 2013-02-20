@@ -4,7 +4,7 @@
 
 -export([array16/0, array32/0,
          map16/0, map32/0]).
-         
+
 
 -include_lib("proper/include/proper.hrl").
 
@@ -64,7 +64,10 @@ array32() ->
 
 fix_map() ->
     ?LET(Integer, choose(0, 15),
-         {proper_gen:list_gen(Integer, {choose_type(), choose_type()})}).
+         proper_gen:list_gen(Integer, {choose_type(), choose_type()})).
+
+mapempty() ->
+    [{}].
 
 map16() ->
     proper_gen:list_gen(16, {choose_type(), choose_type()}).

@@ -23,7 +23,7 @@ test_data()->
      [0,42, <<"sum">>, [1,2]], [1,42, nil, [3]],
      -234, -40000, -16#10000000, -16#100000000,
      42,
-     {[]}, {hoge}
+     [{}], {hoge}
     ].
 
 compare_all([], [])-> ok;
@@ -61,7 +61,7 @@ unknown_test_freezed_test_dont_do_this()->
 	     -234.4355, 1.0e-34, 1.0e64,
 	     [23, 234, 0.23],
 	     [0,42,<<"sum">>, [1,2]], [1,42, nil, [3]],
-	     {[{1,2},{<<"hoge">>,nil}]}, % map
+	     [{1,2},{<<"hoge">>,nil}], % map
 	     -234, -50000,
 	     42
 	    ],
@@ -72,13 +72,13 @@ unknown_test_freezed_test_dont_do_this()->
 
 issue_5_test() ->
     %% {'type':"workers", 'data':[{'workerid': "std.1", 'slots':[] }]}
-    Term = {[
-             {<<"type">>,<<"workers">>},
-             {<<"data">>,[
-                          {[{<<"workerid">>,<<"std.1">>},{<<"slots">>,[]}]}
-                         ]
-             }
-            ]},
+    Term = [
+            {<<"type">>,<<"workers">>},
+            {<<"data">>,[
+                         [{<<"workerid">>,<<"std.1">>},{<<"slots">>,[]}]
+                        ]
+            }
+           ],
     ?assertEqual({ok, Term}, msgpack:unpack(msgpack:pack(Term))),
 
     Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
