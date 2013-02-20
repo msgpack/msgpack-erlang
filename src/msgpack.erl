@@ -201,21 +201,13 @@ pack_array([A, B, C, D]) ->
 pack_array(L) ->
     case length(L) of
         Len when Len < 16 ->
-            pack_array_(L, <<2#1001:4, Len:4/integer-unit:1>>);
+            <<2#1001:4, Len:4/integer-unit:1, (<< <<(pack_(E))/binary>> || E <- L >>)/binary>>;
         Len when Len < 16#10000 -> % 65536
-            <<16#DC:8, Len:16/big-unsigned-integer-unit:1, (<< (pack_(E))/binary || E <- L >>)/binary>>;
-%%            pack_array_(L, <<16#DC:8, Len:16/big-unsigned-integer-unit:1>>);
+            <<16#DC:8, Len:16/big-unsigned-integer-unit:1, (<< <<(pack_(E))/binary>> || E <- L >>)/binary>>;
         Len ->
-            pack_array_(L, <<16#DD:8, Len:32/big-unsigned-integer-unit:1>>)
+            <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack_(E))/binary>> || E <- L >>)/binary>>
     end.
-
-pack_array_([], Acc) ->
-    Acc;
-
-pack_array_([Head|Tail], Acc) ->
-    pack_array_(Tail, <<Acc/binary,  (pack_(Head))/binary>>).
-
-                                                % Users SHOULD NOT send too long list: this uses lists:reverse/1
+%% Users SHOULD NOT send too long list: this uses lists:reverse/1
 -spec unpack_array_(binary(), non_neg_integer(), [msgpack_term()]) -> {[msgpack_term()], binary()} | no_return().
 unpack_array_(Bin, 0,   Acc) ->
     {lists:reverse(Acc), Bin};
@@ -253,16 +245,15 @@ pack_map([{Ka, Va}, {Kb, Vb}, {Kc, Vc}, {Kd, Vd}])->
 pack_map(M)->
     case length(M) of
         Len when Len < 16 ->
-            pack_map_(M, <<2#1000:4, Len:4/integer-unit:1>>);
+            <<2#1000:4, Len:4/integer-unit:1,
+              (<< <<(pack_(K))/binary, (pack_(V))/binary>> || {K, V} <- M >>)/binary>>;
         Len when Len < 16#10000 -> % 65536
-            pack_map_(M, <<16#DE:8, Len:16/big-unsigned-integer-unit:1>>);
+            <<16#DE:8, Len:16/big-unsigned-integer-unit:1,
+              (<< <<(pack_(K))/binary, (pack_(V))/binary>> || {K, V} <- M >>)/binary>>;
         Len ->
-            pack_map_(M, <<16#DF:8, Len:32/big-unsigned-integer-unit:1>>)
+            <<16#DF:8, Len:16/big-unsigned-integer-unit:1,
+              (<< <<(pack_(K))/binary, (pack_(V))/binary>> || {K, V} <- M >>)/binary>>
     end.
-
-pack_map_([], Acc) -> Acc;
-pack_map_([{Key,Value}|Tail], Acc) ->
-    pack_map_(Tail, << Acc/binary, (pack_(Key))/binary, (pack_(Value))/binary>>).
 
                                                 % Users SHOULD NOT send too long list: this uses lists:reverse/1
 -spec unpack_map_(binary(), non_neg_integer(), msgpack_map()) ->
