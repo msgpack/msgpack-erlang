@@ -203,7 +203,8 @@ pack_array(L) ->
         Len when Len < 16 ->
             pack_array_(L, <<2#1001:4, Len:4/integer-unit:1>>);
         Len when Len < 16#10000 -> % 65536
-            pack_array_(L, <<16#DC:8, Len:16/big-unsigned-integer-unit:1>>);
+            <<16#DC:8, Len:16/big-unsigned-integer-unit:1, (<< (pack_(E))/binary || E <- L >>)/binary>>;
+%%            pack_array_(L, <<16#DC:8, Len:16/big-unsigned-integer-unit:1>>);
         Len ->
             pack_array_(L, <<16#DD:8, Len:32/big-unsigned-integer-unit:1>>)
     end.
