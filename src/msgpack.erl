@@ -252,7 +252,7 @@ pack_map([{Ka, Va}, {Kb, Vb}, {Kc, Vc}, {Kd, Vd}])->
 pack_map(M)->
     case length(M) of
         Len when Len < 16 ->
-            << 2#1000:4, Len:4/integer-unit:1, (pack_map_(M, <<>>))/binary >>;
+            pack_map_(M, <<2#1000:4, Len:4/integer-unit:1>>);
         Len when Len < 16#10000 -> % 65536
             << 16#DE:8, Len:16/big-unsigned-integer-unit:1, (pack_map_(M, <<>>))/binary >>;
         Len ->
