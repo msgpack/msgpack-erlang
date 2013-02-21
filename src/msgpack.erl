@@ -225,12 +225,16 @@ pack_map_([{Key,Value}|Tail], Acc) ->
 
 %% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
 %% EVERY implementation must show its binary length just after type indicator
-%% to skip the string if its unreadable.
+%% to skip the damn string if its unreadable.
 -spec pack_string(list()) -> binary().
 pack_string(String) ->
-    Bin = unicode:characters_to_binary(String),
-    N = erlang:byte_size(Bin),
-    << 16#C1:8, N:32/big-unsigned-integer-unit:1, Bin/binary >>.
+    case unicode:characters_to_binary(String) of
+        {error, Bin, _} -> throw({broken_string, Bin});
+        {incomplete, Bin, _} -> throw({broken_string, Bin});
+        Bin ->
+            N = erlang:byte_size(Bin),
+            << 16#C1:8, N:32/big-unsigned-integer-unit:1, Bin/binary >>
+    end.
 
 % Users SHOULD NOT send too long list: this uses lists:reverse/1
 -spec unpack_map_(binary(), non_neg_integer(), [{msgpack_term(), msgpack_term()}]) ->
