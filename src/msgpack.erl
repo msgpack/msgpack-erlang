@@ -69,10 +69,10 @@ pack(Term)->
 -spec unpack_stream(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
 unpack_stream(Bin) when is_binary(Bin) ->
     try
-	unpack_(Bin)
+        unpack_(Bin)
     catch
-	throw:Exception ->
-	    {error, Exception}
+        throw:Exception ->
+            {error, Exception}
     end;
 unpack_stream(Other) ->
     {error, {badarg, Other}}.
@@ -300,11 +300,11 @@ unpack_(Bin) ->
         <<2#1001:4, L:4, Rest/binary>> ->            unpack_array_(Rest, L, []); % array
         <<2#1000:4, L:4, Rest/binary>> ->            unpack_map_(Rest, L, []);   % map
         
-        %% Invalid data
-        <<F, R/binary>> when
+        %% Reserved bytes. To be ignored (or someday adopted like string).
+        <<F:8, Rest/binary>> when
                              F==16#C4; F==16#C5; F==16#C6; F==16#C7; F==16#C8; F==16#C9;
                              F==16#D4; F==16#D5; F==16#D6; F==16#D7; F==16#D8; F==16#D9 ->
-            throw({badarg, <<F, R/binary>>});
+            unpack_(Rest);
 
         %% Incomplete data (we've covered every complete/invalid case;
         %%                  anything left is incomplete)

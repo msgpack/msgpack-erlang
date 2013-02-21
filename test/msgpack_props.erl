@@ -5,7 +5,7 @@
 -import(msgpack_proper, [choose_type/0]).
 
 prop_type() ->
-    numtests(300,
+    numtests(128,
         ?FORALL(Term, choose_type(),
                 begin
                     Binary = msgpack:pack(Term),
@@ -29,9 +29,10 @@ choose_reserved() ->
            <<16#D9>>]).
 
 prop_reserved() ->
-    numtests(300,
-        ?FORALL(Type, choose_reserved(),
+    numtests(128,
+        ?FORALL({ReservedByte, Term}, {choose_reserved(), choose_type()},
                 begin
-                    {error, {badarg, Type1}} = msgpack:unpack(Type),
-                    Type =:= Type1
+                    Binary = <<ReservedByte/binary, (msgpack:pack(Term))/binary>>,
+                    {ok, Term1} = msgpack:unpack(Binary),
+                    Term =:= Term1
                 end)).
