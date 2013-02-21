@@ -15,8 +15,7 @@ prop_type() ->
 
 
 choose_reserved() ->
-    oneof([<<16#C1>>,
-           <<16#C4>>,
+    oneof([<<16#C4>>,
            <<16#C5>>,
            <<16#C6>>,
            <<16#C7>>,

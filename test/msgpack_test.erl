@@ -85,3 +85,12 @@ issue_5_test() ->
             114,115,164,100,97,116,97,145,130,168,119,111,114,
             107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
     ?assertEqual(Bin0, msgpack:pack(Term)).
+
+
+string_test() ->
+    {ok, CWD} = file:get_cwd(),
+    Path = CWD ++ "/../test/utf8.txt",
+    {ok, UnicodeBin} = file:read_file(Path),
+    String = unicode:characters_to_list(UnicodeBin),
+    MsgpackStringBin = msgpack:pack_string(String),
+    {ok, String} = msgpack:unpack(MsgpackStringBin).

@@ -35,7 +35,8 @@
 
 -module(msgpack).
 
--export([pack/1, unpack/1, unpack_stream/1]).
+-export([pack/1, unpack/1, unpack_stream/1,
+         pack_string/1]).
 
 -type msgpack_map() :: {[{msgpack_term(), msgpack_term()}]}.
 
@@ -92,6 +93,9 @@ unpack(Data) when is_binary(Data) ->
     end;
 unpack(Badarg) ->
     {error, {badarg, Badarg}}.
+
+
+
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -219,6 +223,15 @@ pack_map_([], Acc) -> Acc;
 pack_map_([{Key,Value}|Tail], Acc) ->
     pack_map_(Tail, << Acc/binary, (pack_(Key))/binary, (pack_(Value))/binary>>).
 
+%% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
+%% EVERY implementation must show its binary length just after type indicator
+%% to skip the string if its unreadable.
+-spec pack_string(list()) -> binary().
+pack_string(String) ->
+    Bin = unicode:characters_to_binary(String),
+    N = erlang:byte_size(Bin),
+    << 16#C1:8, N:32/big-unsigned-integer-unit:1, Bin/binary >>.
+
 % Users SHOULD NOT send too long list: this uses lists:reverse/1
 -spec unpack_map_(binary(), non_neg_integer(), [{msgpack_term(), msgpack_term()}]) ->
 			 {{[{msgpack_term(), msgpack_term()}]}, binary()} | no_return().
@@ -232,48 +245,67 @@ unpack_map_(Bin, Len, Acc) ->
 -spec unpack_(Bin::binary()) -> {msgpack_term(), binary()} | no_return().
 unpack_(Bin) ->
     case Bin of
-% ATOMS
-	<<16#C0, Rest/binary>> -> {nil, Rest};
-	<<16#C2, Rest/binary>> -> {false, Rest};
-	<<16#C3, Rest/binary>> -> {true, Rest};
-% Floats
-	<<16#CA, V:32/float-unit:1, Rest/binary>> ->   {V, Rest};
-	<<16#CB, V:64/float-unit:1, Rest/binary>> ->   {V, Rest};
-% Unsigned integers
-	<<16#CC, V:8/unsigned-integer, Rest/binary>> ->             {V, Rest};
-	<<16#CD, V:16/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
-	<<16#CE, V:32/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
-	<<16#CF, V:64/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
-% Signed integers
-	<<16#D0, V:8/signed-integer, Rest/binary>> ->             {V, Rest};
-	<<16#D1, V:16/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
-	<<16#D2, V:32/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
-	<<16#D3, V:64/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
-% Raw bytes
-	<<16#DA, L:16/unsigned-integer-unit:1, V:L/binary, Rest/binary>> -> {V, Rest};
-	<<16#DB, L:32/unsigned-integer-unit:1, V:L/binary, Rest/binary>> -> {V, Rest};
-% Arrays
-	<<16#DC, L:16/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_array_(Rest, L, []);
-	<<16#DD, L:32/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_array_(Rest, L, []);
-% Maps
-	<<16#DE, L:16/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_map_(Rest, L, []);
-	<<16#DF, L:32/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_map_(Rest, L, []);
+        %% ATOMS
+        <<16#C0, Rest/binary>> -> {nil, Rest};
 
-% Tag-encoded lengths (kept last, for speed)
-	<<0:1, V:7, Rest/binary>> ->                 {V, Rest};                  % positive int
-	<<2#111:3, V:5, Rest/binary>> ->             {V - 2#100000, Rest};       % negative int
-	<<2#101:3, L:5, V:L/binary, Rest/binary>> -> {V, Rest};                  % raw bytes
-	<<2#1001:4, L:4, Rest/binary>> ->            unpack_array_(Rest, L, []); % array
-	<<2#1000:4, L:4, Rest/binary>> ->            unpack_map_(Rest, L, []);   % map
+        %% String (skip failed to decode with unicode (
+        %% TODO: make this optional for performatnce
+        <<16#C1, L:32/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>> ->
+            case unicode:characters_to_list(V) of
+                {error, String, _RestData} ->  {String, Rest};
+                {incomplete, String, _ } -> {String, Rest};
+                String -> {String, Rest}
+            end;
 
-% Invalid data
-	<<F, R/binary>> when F==16#C1;
-	                     F==16#C4; F==16#C5; F==16#C6; F==16#C7; F==16#C8; F==16#C9;
-	                     F==16#D4; F==16#D5; F==16#D6; F==16#D7; F==16#D8; F==16#D9 ->
-	    throw({badarg, <<F, R/binary>>});
-% Incomplete data (we've covered every complete/invalid case; anything left is incomplete)
-	_ ->
-	    throw(incomplete)
+        %% Boolean
+        <<16#C2, Rest/binary>> -> {false, Rest};
+        <<16#C3, Rest/binary>> -> {true, Rest};
+
+        %% Floats
+        <<16#CA, V:32/float-unit:1, Rest/binary>> ->   {V, Rest};
+        <<16#CB, V:64/float-unit:1, Rest/binary>> ->   {V, Rest};
+
+        %% Unsigned integers
+        <<16#CC, V:8/unsigned-integer, Rest/binary>> ->             {V, Rest};
+        <<16#CD, V:16/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
+        <<16#CE, V:32/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
+        <<16#CF, V:64/big-unsigned-integer-unit:1, Rest/binary>> -> {V, Rest};
+
+        %% Signed integers
+        <<16#D0, V:8/signed-integer, Rest/binary>> ->             {V, Rest};
+        <<16#D1, V:16/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
+        <<16#D2, V:32/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
+        <<16#D3, V:64/big-signed-integer-unit:1, Rest/binary>> -> {V, Rest};
+
+        %% Raw bytes
+        <<16#DA, L:16/unsigned-integer-unit:1, V:L/binary, Rest/binary>> -> {V, Rest};
+        <<16#DB, L:32/unsigned-integer-unit:1, V:L/binary, Rest/binary>> -> {V, Rest};
+
+        %% Arrays
+        <<16#DC, L:16/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_array_(Rest, L, []);
+        <<16#DD, L:32/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_array_(Rest, L, []);
+
+        %% Maps
+        <<16#DE, L:16/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_map_(Rest, L, []);
+        <<16#DF, L:32/big-unsigned-integer-unit:1, Rest/binary>> -> unpack_map_(Rest, L, []);
+
+        %% Tag-encoded lengths
+        <<0:1, V:7, Rest/binary>> ->                 {V, Rest};                  % positive int
+        <<2#111:3, V:5, Rest/binary>> ->             {V - 2#100000, Rest};       % negative int
+        <<2#101:3, L:5, V:L/binary, Rest/binary>> -> {V, Rest};                  % raw bytes
+        <<2#1001:4, L:4, Rest/binary>> ->            unpack_array_(Rest, L, []); % array
+        <<2#1000:4, L:4, Rest/binary>> ->            unpack_map_(Rest, L, []);   % map
+        
+        %% Invalid data
+        <<F, R/binary>> when
+                             F==16#C4; F==16#C5; F==16#C6; F==16#C7; F==16#C8; F==16#C9;
+                             F==16#D4; F==16#D5; F==16#D6; F==16#D7; F==16#D8; F==16#D9 ->
+            throw({badarg, <<F, R/binary>>});
+
+        %% Incomplete data (we've covered every complete/invalid case;
+        %%                  anything left is incomplete)
+        _ ->
+            throw(incomplete)
     end.
 
 

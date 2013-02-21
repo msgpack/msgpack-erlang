@@ -52,6 +52,15 @@ since 0.1.1 - only tested in MacOS, Linux
   src/msgpack.erl:357:<0.131.0>: for 3828 KB test data(t2b/b2t).
 
 
+experimental feature: String type
+---------------------------------
+
+::
+
+  1> {ok, "埼玉"} = msgpack:unpack(msgpack:pack_string("埼玉")).
+  {ok,[22524,29577]}
+
+
 License
 -------
 
