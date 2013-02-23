@@ -11,6 +11,9 @@
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+-define(PCNT, 5).
+-define(CNT, 10000).
+
 test_data()->
     [true, false, nil,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
@@ -29,27 +32,106 @@ test_data()->
 %%     [{1,1}, {2,2}, {3,3}, {4,4}, {5,5}],
 
 benchmark0_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack:pack(Data, [jiffy])),
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jiffy])),
     ?debugFmt("for ~p KB test data(msgpack_jiffy).", [byte_size(S) div 1024]).
 
 benchmark1_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack:pack(Data, [jsx])),
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jsx])),
     ?debugFmt("for ~p KB test data(msgpack_jsx).", [byte_size(S) div 1024]).
 
 benchmark2_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack_nif:pack(Data)),
     {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
     ?debugFmt("for ~p KB test data(msgpack_nif).", [byte_size(S) div 1024]).
 
 benchmark3_test()->
-    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", term_to_binary(Data)),
     Data=?debugTime("deserialize", binary_to_term(S)),
     ?debugFmt("for ~p KB test data(t2b/b2t).", [byte_size(S) div 1024]).
+
+multirunner(What, Pack, Unpack) ->
+    Self = self(),
+    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
+    Packed = Pack(Data),
+    Size = byte_size(Packed) div 1024,
+    [ spawn(fun() ->
+                    {T, _} = timer:tc(Pack, [Data]),
+                    Self ! {p0, N, T}
+            end)|| N <- lists:seq(1, ?PCNT)],
+    TimesPack = [receive
+                     {p0, N, Time} ->
+                         Time
+                 end || N <- lists:seq(1, ?PCNT)],
+    TotalPack = lists:foldl(fun(N, Acc) ->
+                                    Acc + N
+                            end, 0, TimesPack),
+
+    ?debugFmt("   serialize: ~.3f s", [TotalPack/1000/1000/?PCNT]),
+    [ spawn(fun() ->
+                    {T, _} = timer:tc(Unpack, [Packed]),
+                    Self ! {p0, N, T}
+            end) || N <- lists:seq(1, ?PCNT)],
+    TimesUnpack = [receive
+                       {p0, N, Time} ->
+                           Time
+                   end || N <- lists:seq(1, ?PCNT)],
+    TotalUnpack = lists:foldl(fun(N, Acc) ->
+                                      Acc + N
+                              end, 0, TimesUnpack),
+    ?debugFmt(" deserialize: ~.3f s", [TotalUnpack/1000/1000/?PCNT]),
+    ?debugFmt("for ~p KB test data(~s x ~p).", [Size, What, ?PCNT]),
+    ok.
+
+
+
+benchmark_p0_test_() ->
+    {timeout, 600,
+     ?_assertEqual(ok,
+                   multirunner("msgpack_jiffy",
+                               fun(Data) ->
+                                       msgpack:pack(Data, [jiffy])
+                               end,
+                               fun(Data) ->
+                                       msgpack:unpack(Data, [jiffy])
+                               end))}.
+
+benchmark_p1_test_() ->
+    {timeout, 600,
+     ?_assertEqual(ok,
+                   multirunner("msgpack_jsx",
+                               fun(Data) ->
+                                       msgpack:pack(Data, [jsx])
+                               end,
+                               fun(Data) ->
+                                       msgpack:unpack(Data, [jsx])
+                               end))}.
+
+benchmark_p2_test_() ->
+    {timeout, 600,
+     ?_assertEqual(ok,
+                   multirunner("msgpack_nif",
+                               fun(Data) ->
+                                       msgpack_nif:pack(Data)
+                               end,
+                               fun(Data) ->
+                                       msgpack_nif:unpack(Data)
+                               end))}.
+
+benchmark_p3_test_() ->
+    {timeout, 600,
+     ?_assertEqual(ok,
+                   multirunner("t2b/b2t",
+                               fun(Data) ->
+                                       term_to_binary(Data)
+                               end,
+                               fun(Data) ->
+                                       binary_to_term(Data)
+                               end))}.
 
 -endif.

@@ -61,21 +61,22 @@
 pack(Term) ->
     pack(Term, [jiffy]).
 
-pack(Term, [jiffy])->
+pack(Term, Opt)->
     try
-        msgpack_jiffy:pack(Term)
-    catch
-        throw:Exception ->
-            {error, Exception}
-    end;
-
-pack(Term, [jsx])->
-    try
-        msgpack_jsx:pack(Term)
+        pack_(Term, Opt)
     catch
         throw:Exception ->
             {error, Exception}
     end.
+
+pack_(Term, [jiffy])->
+    msgpack_jiffy:pack(Term);
+
+pack_(Term, [jsx])->
+    msgpack_jsx:pack(Term);
+
+pack_(Term, [nif])->
+    msgpack_nif:pack(Term).
 
 %% @doc Decode an msgpack binary into an erlang term.
 %%      It only decodes the first msgpack packet contained in the binary; the rest is returned as is.
@@ -89,22 +90,26 @@ unpack(D) ->
     unpack(D, [jiffy]).
 
 -spec unpack_stream(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
-unpack_stream(Bin, [jiffy]) when is_binary(Bin) ->
-    try
-        msgpack_jiffy:unpack(Bin)
-    catch
-        throw:Exception ->
-            {error, Exception}
-    end;
-unpack_stream(Bin, [jsx]) when is_binary(Bin) ->
-    try
-        msgpack_jsx:unpack(Bin)
-    catch
-        throw:Exception ->
-            {error, Exception}
-    end;
 
-unpack_stream(Other, _Opts) ->
+unpack_stream(Bin, Opt) ->
+    try
+        unpack_stream_(Bin, Opt)
+    catch
+        throw:Exception ->
+            {error, Exception}
+    end.
+
+unpack_stream_(Bin, [jiffy]) when is_binary(Bin) ->
+    msgpack_jiffy:unpack(Bin);
+
+
+unpack_stream_(Bin, [jsx]) when is_binary(Bin) ->
+    msgpack_jsx:unpack(Bin);
+
+unpack_stream_(Bin, [nif]) when is_binary(Bin) ->
+    msgpack_nif:unpack(Bin);
+
+unpack_stream_(Other, _Opts) ->
     {error, {badarg, Other}}.
 
 %%% @doc Decode an msgpack binary into an erlang terms.
