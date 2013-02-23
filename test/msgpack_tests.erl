@@ -1,6 +1,6 @@
 -module(msgpack_tests).
 
--import(msgpack, [pack/1, unpack/1]).
+-import(msgpack, [pack/2, unpack/2, pack/1, unpack/1]).
 
 -include_lib("eunit/include/eunit.hrl").
 
@@ -21,79 +21,96 @@ unpack_test_() ->
 
 array_test_()->
     [
-        {"length 16",
-            fun() ->
-                    List = lists:seq(0, 16),
-                    Binary = pack(List),
-                    ?assertEqual({ok, List}, unpack(Binary))
-            end},
-        {"length 32",
-            fun() ->
-                    List = lists:seq(0, 16#010000),
-                    Binary = pack(List),
-                    ?assertEqual({ok, List}, unpack(Binary))
-            end},
-        {"empty",
-            fun() ->
-                    EmptyList = [],
-                    Binary = pack(EmptyList),
-                    ?assertEqual({ok, EmptyList}, unpack(Binary))
-            end}
+     {"length 16",
+      fun() ->
+              List = lists:seq(0, 16),
+              Binary = pack(List),
+              ?assertEqual({ok, List}, unpack(Binary))
+      end},
+     {"length 32",
+      fun() ->
+              List = lists:seq(0, 16#010000),
+              Binary = pack(List),
+              ?assertEqual({ok, List}, unpack(Binary))
+      end},
+     {"empty",
+      fun() ->
+              EmptyList = [],
+              Binary = pack(EmptyList),
+              ?assertEqual({ok, EmptyList}, unpack(Binary))
+      end}
     ].
-
 
 map_test_()->
     [
-        {"length 16",
-            fun() ->
-                    Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
-                    Binary = pack(Map),
-                    ?assertEqual({ok, Map}, unpack(Binary))
-            end},
-        {"length 32",
-            fun() ->
-                    Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
-                    Binary = pack(Map),
-                    ?assertEqual({ok, Map}, unpack(Binary))
-            end},
-        {"empty",
-            fun() ->
-                    EmptyMap = [{}],
-                    Binary = pack(EmptyMap),
-                    ?assertEqual({ok, EmptyMap}, unpack(Binary))
-            end}
+     {"jiffy length 16",
+      fun() ->
+              Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
+              Binary = pack(Map, [jiffy]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+      end},
+     {"jiffy length 32",
+      fun() ->
+              Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
+              Binary = pack(Map, [jiffy]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+      end},
+     {"jiffy empty",
+      fun() ->
+              EmptyMap = {[]},
+              Binary = pack(EmptyMap, [jiffy]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jiffy]))
+      end},
+     {"jsx length 16",
+      fun() ->
+              Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
+              Binary = pack(Map, [jsx]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+      end},
+     {"jsx length 32",
+      fun() ->
+              Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
+              Binary = pack(Map, [jsx]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+      end},
+     {"jsx empty",
+      fun() ->
+              EmptyMap = [{}],
+              Binary = pack(EmptyMap, [jsx]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jsx]))
+      end}
     ].
 
 int_test_() ->
     [
-        {"",
-            fun() ->
-                    Term = -2147483649,
-                    Binary = pack(Term),
-                    ?assertEqual({ok, Term}, unpack(Binary))
-            end}
+     {"",
+      fun() ->
+              Term = -2147483649,
+              Binary = pack(Term),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end}
     ].
 
 error_test_()->
     [
-        {"badarg atom",
-            ?_assertEqual({error, {badarg, atom}},
-                          pack(atom))},
-        {"badarg tuple",
-            fun() ->
-                    Term = {"hoge", "hage", atom},
-                    ?assertEqual({error, {badarg, Term}},
-                                 pack(Term))
-            end}
+     {"badarg atom",
+      ?_assertEqual({error, {badarg, atom}},
+                    pack(atom))},
+     {"badarg tuple",
+      fun() ->
+              Term = {"hoge", "hage", atom},
+              ?assertEqual({error, {badarg, Term}},
+                           pack(Term))
+      end}
     ].
 
 binary_test_() ->
     [
-        {"0 byte",
-            fun() ->
-                    Binary = pack(<<>>),
-                    ?assertEqual({ok, <<>>}, unpack(Binary))
-            end}
+     {"0 byte",
+      fun() ->
+              Binary = pack(<<>>),
+              ?assertEqual({ok, <<>>}, unpack(Binary))
+      end}
     ].
 
 %% long_binary_test_()->
@@ -114,4 +131,3 @@ binary_test_() ->
 %%     {ok, Data} = ?debugTime("deserialize", unpack(S)),
 %%     ?debugFmt("for ~p KB test data.", [byte_size(S) div 1024]),
 %%     ok.
-

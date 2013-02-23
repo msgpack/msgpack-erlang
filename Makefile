@@ -1,5 +1,7 @@
 .PHONY: compile xref eunit clean doc check make deps
 
+REBAR=./rebar
+
 all: compile
 
 # for busy typos
@@ -8,8 +10,10 @@ ma: all
 mak: all
 make: all
 
+console: compile
+	@erl -pa ebin
 deps:
-	@./rebar update-deps get-deps
+	@$(rebar) update-deps get-deps
 
 compile:
 	@./rebar compile
@@ -19,6 +23,8 @@ xref:
 
 eunit: compile
 	@./rebar skip_deps=true eunit
+
+test: eunit
 
 clean:
 	@./rebar clean

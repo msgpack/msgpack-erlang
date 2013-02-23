@@ -25,19 +25,28 @@ test_data()->
      42
     ].
 
+%%     [{1,1}, {2,2}, {3,3}],
+%%     [{1,1}, {2,2}, {3,3}, {4,4}, {5,5}],
+
 benchmark0_test()->
     Data=[test_data() || _ <- lists:seq(0, 10000)],
-    S=?debugTime("  serialize", msgpack:pack(Data)),
-    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S)),
-    ?debugFmt("for ~p KB test data(msgpack).", [byte_size(S) div 1024]).
+    S=?debugTime("  serialize", msgpack:pack(Data, [jiffy])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jiffy])),
+    ?debugFmt("for ~p KB test data(msgpack_jiffy).", [byte_size(S) div 1024]).
 
 benchmark1_test()->
+    Data=[test_data() || _ <- lists:seq(0, 10000)],
+    S=?debugTime("  serialize", msgpack:pack(Data, [jsx])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jsx])),
+    ?debugFmt("for ~p KB test data(msgpack_jsx).", [byte_size(S) div 1024]).
+
+benchmark2_test()->
     Data=[test_data() || _ <- lists:seq(0, 10000)],
     S=?debugTime("  serialize", msgpack_nif:pack(Data)),
     {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
     ?debugFmt("for ~p KB test data(msgpack_nif).", [byte_size(S) div 1024]).
 
-benchmark2_test()->
+benchmark3_test()->
     Data=[test_data() || _ <- lists:seq(0, 10000)],
     S=?debugTime("  serialize", term_to_binary(Data)),
     Data=?debugTime("deserialize", binary_to_term(S)),

@@ -12,7 +12,7 @@
 
 -ifdef(DO_MSGPACK_CROSSLANG_TEST).
 
-test_data()->
+test_data_jsx()->
     [true, false, nil,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
      -1, -23, -512, -1230, -567898, -16#FFFFFFFFFF,
@@ -24,6 +24,20 @@ test_data()->
      -234, -40000, -16#10000000, -16#100000000,
      42,
      [{}], {hoge}
+    ].
+
+test_data_jiffy()->
+    [true, false, nil,
+     0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
+     -1, -23, -512, -1230, -567898, -16#FFFFFFFFFF,
+     123.123, -234.4355, 1.0e-34, 1.0e64,
+     [23, 234, 0.23],
+     <<"hogehoge">>, <<"243546rf7g68h798j", 0, 23, 255>>,
+     <<"hoasfdafdas][">>,
+     [0,42, <<"sum">>, [1,2]], [1,42, nil, [3]],
+     -234, -40000, -16#10000000, -16#100000000,
+     42,
+     {[]}, {hoge}
     ].
 
 compare_all([], [])-> ok;
@@ -42,46 +56,77 @@ port_receive(Port, Acc) ->
     after 1000 -> Acc
     end.
 
-port_test()->
-    Tests = test_data(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests]))),
+port_jiffy_test()->
+    Tests = test_data_jiffy(),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [jiffy]), [jiffy)),
 
-%    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
-%    true = port_command(Port, msgpack:pack(Tests)),
-%    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
-%    port_close(Port).
+                                                %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
+                                                %    true = port_command(Port, msgpack:pack(Tests)),
+                                                %    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
+                                                %    port_close(Port).
+                 ok.
+
+
+port_jsx_test()->
+    Tests = test_data_jsx(),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [jsx]), [jsx])),
+
+                                                %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
+                                                %    true = port_command(Port, msgpack:pack(Tests)),
+                                                %    ?assertEqual({Tests, <<>>}, msgpack:unpack(port_receive(Port))),
+                                                %    port_close(Port).
     ok.
 
 unknown_test_freezed_test_dont_do_this()->
     Port = open_port({spawn, "ruby testcase_generator.rb"}, [binary, eof]),
     Tests = [0, 1, 2, 123, 512, 1230, 678908,
-	     -1, -23, -512, -1230, -567898,
-	     <<"hogehoge">>, <<"243546rf7g68h798j">>,
-	     123.123,
-	     -234.4355, 1.0e-34, 1.0e64,
-	     [23, 234, 0.23],
-	     [0,42,<<"sum">>, [1,2]], [1,42, nil, [3]],
-	     [{1,2},{<<"hoge">>,nil}], % map
-	     -234, -50000,
-	     42
-	    ],
+             -1, -23, -512, -1230, -567898,
+             <<"hogehoge">>, <<"243546rf7g68h798j">>,
+             123.123,
+             -234.4355, 1.0e-34, 1.0e64,
+             [23, 234, 0.23],
+             [0,42,<<"sum">>, [1,2]], [1,42, nil, [3]],
+             [{1,2},{<<"hoge">>,nil}], % map
+             -234, -50000,
+             42
+            ],
     ?assertEqual(ok, compare_all(Tests, msgpack:unpack_all(port_receive(Port)))),
     port_close(Port).
 
 -endif.
 
-issue_5_test() ->
+issue_jsx_5_test() ->
     %% {'type':"workers", 'data':[{'workerid': "std.1", 'slots':[] }]}
     Term = [
-            {<<"type">>,<<"workers">>},
+            {<<"type">>, <<"workers">>},
             {<<"data">>,[
-                         [{<<"workerid">>,<<"std.1">>},{<<"slots">>,[]}]
+                         [{<<"workerid">>, <<"std.1">>}, {<<"slots">>, []}]
                         ]
             }
            ],
-    ?assertEqual({ok, Term}, msgpack:unpack(msgpack:pack(Term))),
-
+    Encoded = msgpack:pack(Term, [jsx]),
     Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
-            114,115,164,100,97,116,97,145,130,168,119,111,114,
-            107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
-    ?assertEqual(Bin0, msgpack:pack(Term)).
+             114,115,164,100,97,116,97,145,130,168,119,111,114,
+             107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
+    ?assertEqual(Bin0, Encoded),
+
+    {ok, Decoded} = msgpack:unpack(Encoded, [jsx]),
+    ?assertEqual(Term, Decoded).
+
+
+issue_jiffy_5_test() ->
+    %% {'type':"workers", 'data':[{'workerid': "std.1", 'slots':[] }]}
+    Term = {[
+             {<<"type">>, <<"workers">>},
+             {<<"data">>,[
+                          {[{<<"workerid">>, <<"std.1">>},{<<"slots">>, []}]}
+                         ]
+             }
+            ]},
+    Encoded = msgpack:pack(Term, [jiffy]),
+    Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
+             114,115,164,100,97,116,97,145,130,168,119,111,114,
+             107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
+    ?assertEqual(Bin0, Encoded),
+    {ok, Decoded} = msgpack:unpack(Encoded, [jiffy]),
+    ?assertEqual(Term, Decoded).
