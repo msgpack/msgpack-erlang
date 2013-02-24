@@ -1,5 +1,7 @@
 .PHONY: compile xref eunit clean doc check make deps
 
+REBAR=./rebar
+
 all: compile
 
 # for busy typos
@@ -8,32 +10,36 @@ ma: all
 mak: all
 make: all
 
+console: compile
+	@erl -pa ebin
 deps:
-	@./rebar update-deps get-deps
+	@$(REBAR) update-deps get-deps
 
 compile:
-	@./rebar compile
+	@$(REBAR) compile
 
 xref:
-	@./rebar xref
+	@$(REBAR) xref
 
 eunit: compile
-	@./rebar skip_deps=true eunit
+	@$(REBAR) skip_deps=true eunit
+
+test: eunit
 
 clean:
-	@./rebar clean
+	@$(REBAR) clean
 
 doc:
-	@./rebar doc
+	@$(REBAR) doc
 
 bench: compile
-	@./rebar euni skip_deps=true suites=bench_tests
+	@$(REBAR) euni skip_deps=true suites=bench_tests
 
 check: compile xref
-#	@echo "you need ./rebar build-plt before make check"
-#	@./rebar build-plt
-	@./rebar check-plt
-	@./rebar dialyze
+#	@echo "you need $(REBAR) build-plt before make check"
+#	@$(REBAR) build-plt
+	@$(REBAR) check-plt
+	@$(REBAR) dialyze
 
 crosslang:
 	@echo "do ERL_LIBS=../ before you make crosslang or fail"
