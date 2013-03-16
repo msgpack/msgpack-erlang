@@ -23,7 +23,7 @@
 
 %% pack them all
 -spec pack(msgpack:object(), option()) -> binary().
-pack(I, _) when is_integer(I), I < 0 ->
+pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
 pack(I, _) when is_integer(I) ->
     pack_uint(I);
@@ -39,7 +39,8 @@ pack(Bin, _) when is_binary(Bin) ->
     pack_raw(Bin);
 
 %% jiffy interface
-pack({Map}, Opt = ?OPTION{interface=jiffy}) -> pack_map(Map, Opt);
+pack({Map}, Opt = ?OPTION{interface=jiffy}) ->
+    pack_map(Map, Opt);
 
 %% jsx interface
 pack(Map, Opt = ?OPTION{interface=jsx}) when Map =:= [{}]->
@@ -74,7 +75,7 @@ pack_int(N) ->
 pack_uint(N) when N < 128 ->
     << 2#0:1, N:7 >>;
 %% uint 8
-pack_uint(N) when (N band 16#FF) ->
+pack_uint(N) when (N band 16#FF) =:= N ->
     << 16#CC:8, N:8 >>;
 %% uint 16
 pack_uint(N) when (N band 16#FFFF) =:= N ->
