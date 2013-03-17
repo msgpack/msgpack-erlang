@@ -66,7 +66,8 @@ pack(Term, [nif])->
     msgpack_nif:pack(Term);
 pack(Term, [Interface]) ->
     try
-        msgpack_packer:pack(Term, ?OPTION{interface=Interface})
+        msgpack_packer:pack(Term, ?OPTION{interface=Interface,
+                                          map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
     catch
         throw:Exception -> {error, Exception}
     end.
@@ -117,7 +118,9 @@ unpack_stream(Bin, [nif]) ->
     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, [Interface]) ->
     try
-        msgpack_unpacker:unpack_stream(Bin, ?OPTION{interface=Interface})
+        msgpack_unpacker:unpack_stream(Bin,
+                                       ?OPTION{interface=Interface,
+                                               map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
     catch
         throw:Exception -> {error, Exception}
     end.

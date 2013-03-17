@@ -18,10 +18,11 @@
 
 -module(msgpack_unpacker).
 
--export([unpack_stream/2]).
+-export([unpack_stream/2, map_unpacker/1]).
 
 -include("msgpack.hrl").
 
+-export([unpack_map_jiffy/4, unpack_map_jsx/4]).
 
 %% unpack them all
 -spec unpack_stream(Bin::binary(), msgpack_option()) -> {msgpack:object(), binary()} | no_return().
@@ -72,31 +73,31 @@ unpack_stream(<<16#DD, L:32/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     unpack_array(Rest, L, [], Opt);
 %% Maps
 unpack_stream(<<16#DE, L:16/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
-    case Opt?OPTION.interface of
-        jiffy -> unpack_map_jiffy(Rest, L, [], Opt);
-        jsx   -> unpack_map_jsx(Rest, L, [], Opt)
-    end;
+    Unpacker = Opt?OPTION.map_unpack_fun,
+    Unpacker(Rest, L, [], Opt);
+
 unpack_stream(<<16#DF, L:32/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
-    case Opt?OPTION.interface of
-        jiffy -> unpack_map_jiffy(Rest, L, [], Opt);
-        jsx   -> unpack_map_jsx(Rest, L, [], Opt)
-    end;
+    Unpacker = Opt?OPTION.map_unpack_fun,
+    Unpacker(Rest, L, [], Opt);
 
 %% Tag-encoded lengths (kept last, for speed)
-unpack_stream(<<0:1, V:7, Rest/binary>>, _) ->
-    {V, Rest};                  % positive int
-unpack_stream(<<2#111:3, V:5, Rest/binary>>, _) ->
-    {V - 2#100000, Rest};       % negative int
-unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>, _) ->
-    {V, Rest};                  % raw bytes
+%% positive int
+unpack_stream(<<0:1, V:7, Rest/binary>>, _) -> {V, Rest};
+
+%% negative int
+unpack_stream(<<2#111:3, V:5, Rest/binary>>, _) -> {V - 2#100000, Rest};
+
+%% raw bytes
+unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>, _) -> {V, Rest};
+
+%% array
 unpack_stream(<<2#1001:4, L:4, Rest/binary>>, Opt) ->
-    unpack_array(Rest, L, [], Opt); % array
+    unpack_array(Rest, L, [], Opt);
+
+%% map
 unpack_stream(<<2#1000:4, L:4, Rest/binary>>, Opt) ->
-    io:format("~p", [Opt]),
-    case Opt?OPTION.interface of
-        jiffy -> unpack_map_jiffy(Rest, L, [], Opt);
-        jsx   -> unpack_map_jsx(Rest, L, [], Opt)
-    end;
+    Unpacker = Opt?OPTION.map_unpack_fun,
+    Unpacker(Rest, L, [], Opt);
 
 %% Invalid data
 unpack_stream(<<F, R/binary>>, _) when F==16#C1;
@@ -107,16 +108,24 @@ unpack_stream(<<F, R/binary>>, _) when F==16#C1;
 unpack_stream(_, _) ->
     throw(incomplete).
 
--spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], msgpack_option()) -> {[msgpack:object()], binary()} | no_return().
+-spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], msgpack_option()) ->
+                          {[msgpack:object()], binary()} | no_return().
 unpack_array(Bin, 0,   Acc, _) ->
     {lists:reverse(Acc), Bin};
 unpack_array(Bin, Len, Acc, Opt) ->
     {Term, Rest} = unpack_stream(Bin, Opt),
     unpack_array(Rest, Len-1, [Term|Acc], Opt).
 
-%% %% Users SHOULD NOT send too long list: this uses lists:reverse/1
-%% -spec unpack_map(binary(), non_neg_integer(), msgpack:msgpack_map()) ->
-%%                         {msgpack:msgpack_map(), binary()} | no_return().
+map_unpacker(jiffy) ->
+    fun ?MODULE:unpack_map_jiffy/4;
+map_unpacker(jsx) ->
+    fun ?MODULE:unpack_map_jsx/4.
+
+
+%% Users SHOULD NOT send too long list: this uses lists:reverse/1
+-spec unpack_map_jiffy(binary(), non_neg_integer(),
+                       msgpack:msgpack_map(), msgpack_option()) ->
+                              {msgpack:msgpack_map(), binary()} | no_return().
 unpack_map_jiffy(Bin, 0,   Acc, _) ->
     {{lists:reverse(Acc)}, Bin};
 unpack_map_jiffy(Bin, Len, Acc, Opt) ->
@@ -124,8 +133,9 @@ unpack_map_jiffy(Bin, Len, Acc, Opt) ->
     {Value, Rest2} = unpack_stream(Rest, Opt),
     unpack_map_jiffy(Rest2, Len-1, [{Key,Value}|Acc], Opt).
 
-%% -spec unpack_map(binary(), non_neg_integer(), msgpack:msgpack_map()) ->
-%%                          {msgpack:msgpack_map(), binary()} | no_return().
+-spec unpack_map_jsx(binary(), non_neg_integer(),
+                     msgpack:msgpack_map(), msgpack_option()) ->
+                            {msgpack:msgpack_map(), binary()} | no_return().
 unpack_map_jsx(Bin, 0, [], _) ->
     {[{}], Bin};
 unpack_map_jsx(Bin, 0,   Acc, _) ->

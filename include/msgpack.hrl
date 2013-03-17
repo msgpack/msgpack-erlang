@@ -20,6 +20,7 @@
 
 -record(options_v1, {
           interface = jiffy :: jiffy | jsx,
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 :: fun(),
           impl = erlang     :: erlang | nif
          }).
 -define(OPTION, #options_v1).
