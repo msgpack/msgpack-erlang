@@ -24,6 +24,8 @@ pack([{_,_} | _] = Map) ->
     pack_map(Map);
 pack(List)  when is_list(List) ->
     pack_array(List);
+pack(Atom) when is_atom(Atom) ->
+    pack(erlang:atom_to_binary(Atom, unicode));
 pack(Other) ->
     throw({badarg, Other}).
 
