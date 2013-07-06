@@ -50,67 +50,29 @@
 -export_type([object/0, msgpack_map/0]).
 -type object() :: msgpack_term().
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%% external APIs
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+-include("msgpack.hrl").
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
-
--spec pack(Term::msgpack_term()) -> binary() | {error, {badarg, term()}}.
+-spec pack(msgpack_term()) -> binary() | {error, {badarg, term()}}.
 pack(Term) ->
-    pack(Term, [jiffy]).
-
-pack(Term, Opt)->
     try
-        pack_(Term, Opt)
+        msgpack_packer:pack(Term, ?OPTION{})
     catch
-        throw:Exception ->
-            {error, Exception}
+        throw:Exception -> {error, Exception}
     end.
 
-pack_(Term, [jiffy])->
-    msgpack_jiffy:pack(Term);
-
-pack_(Term, [jsx])->
-    msgpack_jsx:pack(Term);
-
-pack_(Term, [nif])->
-    msgpack_nif:pack(Term).
-
-%% @doc Decode an msgpack binary into an erlang term.
-%%      It only decodes the first msgpack packet contained in the binary; the rest is returned as is.
-%%      Returns {error, {badarg, term()}} if the input is corrupted.
-%%      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
-
-unpack_stream(D) ->
-    unpack_stream(D, [jiffy]).
-
-unpack(D) ->
-    unpack(D, [jiffy]).
-
--spec unpack_stream(Bin::binary()) -> {msgpack_term(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
-
-unpack_stream(Bin, Opt) ->
+pack(Term, [nif])->
+    msgpack_nif:pack(Term);
+pack(Term, [Interface]) ->
     try
-        unpack_stream_(Bin, Opt)
+        msgpack_packer:pack(Term, ?OPTION{interface=Interface,
+                                          map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
     catch
-        throw:Exception ->
-            {error, Exception}
+        throw:Exception -> {error, Exception}
     end.
 
-unpack_stream_(Bin, [jiffy]) when is_binary(Bin) ->
-    msgpack_jiffy:unpack(Bin);
 
-
-unpack_stream_(Bin, [jsx]) when is_binary(Bin) ->
-    msgpack_jsx:unpack(Bin);
-
-unpack_stream_(Bin, [nif]) when is_binary(Bin) ->
-    msgpack_nif:unpack(Bin);
-
-unpack_stream_(Other, _Opts) ->
-    {error, {badarg, Other}}.
 
 %%% @doc Decode an msgpack binary into an erlang terms.
 %%%      It only decodes ONLY ONE msgpack packets contained in the binary. No packets should not remain.
@@ -120,15 +82,48 @@ unpack_stream_(Other, _Opts) ->
                               | {error, not_just_binary} % a term deserilized, but binary remains
                               | {error, incomplete}      % too few binary to deserialize complete binary
                               | {error, {badarg, term()}}.
-unpack(Data, Opts) when is_binary(Data) ->
-    case unpack_stream(Data, Opts) of
+unpack(Bin) when is_binary(Bin)  ->
+    case unpack_stream(Bin) of
         {error, _} = E -> E;
         {Term, <<>>} -> {ok, Term};
         {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
     end;
+unpack(Other) ->
+    {error, {badarg, Other}}.
 
-unpack(Badarg, _Opts) ->
-    {error, {badarg, Badarg}}.
+unpack(Bin, Opts) when is_binary(Bin) ->
+    case unpack_stream(Bin, Opts) of
+        {error, _} = E -> E;
+        {Term, <<>>} -> {ok, Term};
+        {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
+    end;
+unpack(Other, _) ->
+    {error, {badarg, Other}}.
+
+
+-spec unpack_stream(binary()) -> {msgpack_term(), binary()}
+                                       | {error, incomplete}
+                                       | {error, {badarg, term()}}.
+unpack_stream(Bin)->
+    try
+        msgpack_unpacker:unpack_stream(Bin, ?OPTION{})
+    catch
+        throw:Exception -> {error, Exception}
+    end.
+
+-spec unpack_stream(binary(), list())->  {msgpack_term(), binary()}
+                                             | {error, incomplete}
+                                             | {error, {badarg, term()}}.
+unpack_stream(Bin, [nif]) ->
+    msgpack_nif:unpack_stream(Bin);
+unpack_stream(Bin, [Interface]) ->
+    try
+        msgpack_unpacker:unpack_stream(Bin,
+                                       ?OPTION{interface=Interface,
+                                               map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
+    catch
+        throw:Exception -> {error, Exception}
+    end.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unit tests
