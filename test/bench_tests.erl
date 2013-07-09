@@ -35,19 +35,19 @@ benchmark0_test()->
     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack:pack(Data, [jiffy])),
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jiffy])),
-    ?debugFmt("for ~p KB test data(msgpack_jiffy).", [byte_size(S) div 1024]).
+    ?debugFmt("for ~p KB test data(jiffy).", [byte_size(S) div 1024]).
 
 benchmark1_test()->
     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack:pack(Data, [jsx])),
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jsx])),
-    ?debugFmt("for ~p KB test data(msgpack_jsx).", [byte_size(S) div 1024]).
+    ?debugFmt("for ~p KB test data(jsx).", [byte_size(S) div 1024]).
 
 benchmark2_test()->
     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
     S=?debugTime("  serialize", msgpack_nif:pack(Data)),
     {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
-    ?debugFmt("for ~p KB test data(msgpack_nif).", [byte_size(S) div 1024]).
+    ?debugFmt("for ~p KB test data(nif).", [byte_size(S) div 1024]).
 
 benchmark3_test()->
     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
@@ -93,7 +93,7 @@ multirunner(What, Pack, Unpack) ->
 benchmark_p0_test_() ->
     {timeout, 600,
      ?_assertEqual(ok,
-                   multirunner("msgpack_jiffy",
+                   multirunner("jiffy",
                                fun(Data) ->
                                        msgpack:pack(Data, [jiffy])
                                end,
@@ -104,7 +104,7 @@ benchmark_p0_test_() ->
 benchmark_p1_test_() ->
     {timeout, 600,
      ?_assertEqual(ok,
-                   multirunner("msgpack_jsx",
+                   multirunner("jsx",
                                fun(Data) ->
                                        msgpack:pack(Data, [jsx])
                                end,
@@ -115,7 +115,7 @@ benchmark_p1_test_() ->
 benchmark_p2_test_() ->
     {timeout, 600,
      ?_assertEqual(ok,
-                   multirunner("msgpack_nif",
+                   multirunner("nif",
                                fun(Data) ->
                                        msgpack_nif:pack(Data)
                                end,
