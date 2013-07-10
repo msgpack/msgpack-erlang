@@ -1,6 +1,6 @@
 .PHONY: compile xref eunit clean doc check make deps
 
-REBAR=./rebar
+REBAR=`which rebar || which ./rebar`
 
 all: compile
 
