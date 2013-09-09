@@ -8,6 +8,7 @@ prequisites for runtime
 -----------------------
 
 Erlang runtime system ( http://erlang.org/ ), >= R15B -- otherwise rebar won't work.
+Based on [the new msgpack spec 232a0d](https://github.com/msgpack/msgpack/blob/232a0d14c6057000cc4a478f0dfbb5942ac54e9e/spec.md) .
 
 rebar.config
 ------------
