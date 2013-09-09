@@ -1,11 +1,13 @@
 -module(msgpack_props).
 
 -include_lib("proper/include/proper.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
--import(msgpack_proper, [choose_type/0]).
+-import(msgpack_proper, [choose_type_jsx/0,
+                         choose_type_jiffy/0]).
 
 prop_type() ->
-    numtests(300,
+    numtests(128,
         ?FORALL(Term, choose_type_jsx(),
                 begin
                     Binary = msgpack:pack(Term, [jsx]),
@@ -22,19 +24,15 @@ prop_type() ->
 
 
 choose_reserved() ->
-    oneof([<<16#C1>>,
-           <<16#C4>>,
-           <<16#C5>>,
-           <<16#C6>>,
-           <<16#C7>>,
-           <<16#C8>>,
-           <<16#C9>>,
-           <<16#D4>>,
-           <<16#D5>>,
-           <<16#D6>>,
-           <<16#D7>>,
-           <<16#D8>>,
-           <<16#D9>>]).
+    oneof([16#C1,
+           16#C7,
+           16#C8,
+           16#C9,
+           16#D4,
+           16#D5,
+           16#D6,
+           16#D7,
+           16#D8]).
 
 prop_reserved() ->
     numtests(300,

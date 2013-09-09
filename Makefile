@@ -1,4 +1,4 @@
-.PHONY: compile xref eunit clean doc check make deps
+.PHONY: compile xref eunit clean doc check make deps test
 
 REBAR=./rebar
 
@@ -25,6 +25,9 @@ eunit: xref
 	@$(REBAR) skip_deps=true eunit
 
 test: eunit
+
+eunit: compile
+	@./rebar skip_deps=true eunit
 
 clean:
 	@$(REBAR) clean

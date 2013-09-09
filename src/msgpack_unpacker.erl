@@ -34,6 +34,14 @@ unpack_stream(<<16#C2, Rest/binary>>, _) ->
 unpack_stream(<<16#C3, Rest/binary>>, _) ->
     {true, Rest};
 
+%% Raw bytes
+unpack_stream(<<16#C4, L:8/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, _) ->
+    {V, Rest};
+unpack_stream(<<16#C5, L:16/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, _) ->
+    {V, Rest};
+unpack_stream(<<16#C6, L:32/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, _) ->
+    {V, Rest};
+
 %% Floats
 unpack_stream(<<16#CA, V:32/float-unit:1, Rest/binary>>, _) ->
     {V, Rest};
@@ -60,18 +68,31 @@ unpack_stream(<<16#D2, V:32/big-signed-integer-unit:1, Rest/binary>>, _) ->
 unpack_stream(<<16#D3, V:64/big-signed-integer-unit:1, Rest/binary>>, _) ->
     {V, Rest};
 
-%% Raw bytes
-unpack_stream(<<16#DA, L:16/unsigned-integer-unit:1, V:L/binary, Rest/binary>>, _) ->
-    {V, Rest};
-unpack_stream(<<16#DB, L:32/unsigned-integer-unit:1, V:L/binary, Rest/binary>>, _) ->
-    {V, Rest};
+%% Strings
+unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>,
+              ?OPTION{enable_str=true} = _Opt) ->
+    {unpack_string(V), Rest};
+
+unpack_stream(<<16#DA, L:16/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>,
+              ?OPTION{enable_str=true} = _Opt) ->
+    {unpack_string(V), Rest};
+
+unpack_stream(<<16#DB, L:32/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>,
+              ?OPTION{enable_str=true} = _Opt) ->
+    {unpack_string(V), Rest};
 
 %% Arrays
+unpack_stream(<<2#1001:4, L:4, Rest/binary>>, Opt) ->
+    unpack_array(Rest, L, [], Opt);
 unpack_stream(<<16#DC, L:16/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     unpack_array(Rest, L, [], Opt);
 unpack_stream(<<16#DD, L:32/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     unpack_array(Rest, L, [], Opt);
+
 %% Maps
+unpack_stream(<<2#1000:4, L:4, Rest/binary>>, Opt) ->
+    Unpacker = Opt?OPTION.map_unpack_fun,
+    Unpacker(Rest, L, [], Opt);
 unpack_stream(<<16#DE, L:16/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     Unpacker = Opt?OPTION.map_unpack_fun,
     Unpacker(Rest, L, [], Opt);
@@ -87,26 +108,16 @@ unpack_stream(<<0:1, V:7, Rest/binary>>, _) -> {V, Rest};
 %% negative int
 unpack_stream(<<2#111:3, V:5, Rest/binary>>, _) -> {V - 2#100000, Rest};
 
-%% raw bytes
-unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>, _) -> {V, Rest};
-
-%% array
-unpack_stream(<<2#1001:4, L:4, Rest/binary>>, Opt) ->
-    unpack_array(Rest, L, [], Opt);
-
-%% map
-unpack_stream(<<2#1000:4, L:4, Rest/binary>>, Opt) ->
-    Unpacker = Opt?OPTION.map_unpack_fun,
-    Unpacker(Rest, L, [], Opt);
 
 %% Invalid data
-unpack_stream(<<F, R/binary>>, _) when F==16#C1;
-                                       F==16#C4; F==16#C5; F==16#C6; F==16#C7; F==16#C8; F==16#C9;
-                                       F==16#D4; F==16#D5; F==16#D6; F==16#D7; F==16#D8; F==16#D9 ->
-    throw({badarg, <<F, R/binary>>});
-%% Incomplete data (we've covered every complete/invalid case; anything left is incomplete)
-unpack_stream(_, _) ->
-    throw(incomplete).
+unpack_stream(<<16#C1, _R/binary>>, _) ->  throw({badarg, 16#C1});
+
+%% for extention types
+unpack_stream(<<F, _/binary>>, _) when
+      F==16#C7; F==16#C8; F==16#C9;
+      F==16#D4; F==16#D5; F==16#D6; F==16#D7; F==16#D8 ->  throw({badarg, F});
+
+unpack_stream(_, _) ->  throw(incomplete).
 
 -spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], msgpack_option()) ->
                           {[msgpack:object()], binary()} | no_return().
@@ -144,3 +155,12 @@ unpack_map_jsx(Bin, Len, Acc, Opt) ->
     {Key, Rest} = unpack_stream(Bin, Opt),
     {Value, Rest2} = unpack_stream(Rest, Opt),
     unpack_map_jsx(Rest2, Len-1, [{Key,Value}|Acc], Opt).
+
+
+%% NOTE: msgpack DOES validate the binary as valid unicode string.
+unpack_string(Binary) ->
+    case unicode:characters_to_list(Binary) of
+        {error, _S, _Rest} -> throw({error, {invalid_string, Binary}});
+        {imcomplete, _S, _Rest} -> throw({error, {invalid_string, Binary}});
+        String -> String
+    end.

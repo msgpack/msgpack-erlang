@@ -105,12 +105,12 @@ issue_jsx_5_test() ->
             }
            ],
     Encoded = msgpack:pack(Term, [jsx]),
-    Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
-             114,115,164,100,97,116,97,145,130,168,119,111,114,
-             107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
+    Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
+             196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
+             196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Encoded, [jsx]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [jsx]),
     ?assertEqual(Term, Decoded).
 
 
@@ -124,9 +124,20 @@ issue_jiffy_5_test() ->
              }
             ]},
     Encoded = msgpack:pack(Term, [jiffy]),
-    Bin0 = <<130,164,116,121,112,101,167,119,111,114,107,101,
-             114,115,164,100,97,116,97,145,130,168,119,111,114,
-             107,101,114,105,100,165,115,116,100,46,49,165,115,108,111,116,115,144>>,
+    Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
+             196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
+             196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
-    {ok, Decoded} = msgpack:unpack(Encoded, [jiffy]),
+
+    {ok, Decoded} = msgpack:unpack(Bin0, [jiffy]),
     ?assertEqual(Term, Decoded).
+
+
+string_test() ->
+    {ok, CWD} = file:get_cwd(),
+    Path = CWD ++ "/../test/utf8.txt",
+    {ok, UnicodeBin} = file:read_file(Path),
+    String = unicode:characters_to_list(UnicodeBin),
+    MsgpackStringBin = msgpack:pack(String),
+    {ok, String} = msgpack:unpack(MsgpackStringBin).
+

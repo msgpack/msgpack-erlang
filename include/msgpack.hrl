@@ -28,7 +28,8 @@
           interface = jiffy :: jiffy | jsx,
           map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 :: fun(),
           impl = erlang     :: erlang | nif,
-          allow_atom = none :: none | pack %% allows atom when packing
+          allow_atom = none :: none | pack, %% allows atom when packing
+          enable_str = true :: boolean() %% false for old spec
          }).
 -define(OPTION, #options_v2).
 -type msgpack_option() :: #options_v2{}.

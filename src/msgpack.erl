@@ -35,7 +35,8 @@
 
 -module(msgpack).
 
--export([pack/1, unpack/1, unpack_stream/1, pack/2, unpack/2, unpack_stream/2]).
+-export([pack/1, unpack/1, unpack_stream/1,
+         pack/2, unpack/2, unpack_stream/2]).
 
 -type msgpack_map_jsx() :: [{msgpack_term(), msgpack_term()}] | [{}].
 
@@ -124,6 +125,7 @@ unpack_stream(Bin, [Interface]) ->
     catch
         throw:Exception -> {error, Exception}
     end.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unit tests

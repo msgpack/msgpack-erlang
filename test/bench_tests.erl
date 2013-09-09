@@ -43,11 +43,11 @@ benchmark1_test()->
     {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [jsx])),
     ?debugFmt("for ~p KB test data(jsx).", [byte_size(S) div 1024]).
 
-benchmark2_test()->
-    Data=[test_data() || _ <- lists:seq(0, ?CNT)],
-    S=?debugTime("  serialize", msgpack_nif:pack(Data)),
-    {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
-    ?debugFmt("for ~p KB test data(nif).", [byte_size(S) div 1024]).
+%% benchmark2_test()->
+%%     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
+%%     S=?debugTime("  serialize", msgpack_nif:pack(Data)),
+%%     {ok, Data}=?debugTime("deserialize", msgpack_nif:unpack(S)),
+%%     ?debugFmt("for ~p KB test data(nif).", [byte_size(S) div 1024]).
 
 benchmark3_test()->
     Data=[test_data() || _ <- lists:seq(0, ?CNT)],
@@ -112,16 +112,16 @@ benchmark_p1_test_() ->
                                        msgpack:unpack(Data, [jsx])
                                end))}.
 
-benchmark_p2_test_() ->
-    {timeout, 600,
-     ?_assertEqual(ok,
-                   multirunner("nif",
-                               fun(Data) ->
-                                       msgpack_nif:pack(Data)
-                               end,
-                               fun(Data) ->
-                                       msgpack_nif:unpack(Data)
-                               end))}.
+%% benchmark_p2_test_() ->
+%%     {timeout, 600,
+%%      ?_assertEqual(ok,
+%%                    multirunner("nif",
+%%                                fun(Data) ->
+%%                                        msgpack_nif:pack(Data)
+%%                                end,
+%%                                fun(Data) ->
+%%                                        msgpack_nif:unpack(Data)
+%%                                end))}.
 
 benchmark_p3_test_() ->
     {timeout, 600,

@@ -31,12 +31,17 @@ pack(F, _) when is_float(F) ->
     pack_double(F);
 pack(nil, _) ->
     << 16#C0:8 >>;
-pack(true, _) ->
-    << 16#C3:8 >>;
 pack(false, _) ->
     << 16#C2:8 >>;
-pack(Bin, _) when is_binary(Bin) ->
-    pack_raw(Bin);
+pack(true, _) ->
+    << 16#C3:8 >>;
+
+pack(Bin, Opt) when is_binary(Bin) ->
+    case Opt of
+        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
+        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
+        #options_v1{} = Opt -> pack_raw(Bin)
+    end;
 
 pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
     pack(erlang:atom_to_binary(Atom, unicode), Opt);
@@ -51,8 +56,28 @@ pack(Map, Opt = ?OPTION{interface=jsx}) when Map =:= [{}]->
 pack([{_,_}|_] = Map, Opt = ?OPTION{interface=jsx}) ->
     pack_map(Map, Opt);
 
+pack(List, #options_v2{enable_str=true}=Opt)  when is_list(List) ->
+    try
+        case lists:all(fun is_integer/1, List) of
+            true ->
+                case pack_string(List, Opt) of
+                    %% NOTE: due to erlang string format, msgpack can't
+                    %% tell the differenec between string and list of
+                    %% integers. Thus users have to take care not to
+                    %% include invalid unicode characters.
+                    %% Here to fallback into list(int()).
+                    {error, _} -> pack_array(List, Opt);
+                    Bin when is_binary(Bin) -> Bin
+                end;
+            false ->
+                pack_array(List, Opt)
+        end
+    catch error:badarg -> pack_array(List, Opt)
+    end;
+
 pack(List, Opt)  when is_list(List) ->
     pack_array(List, Opt);
+
 pack(Other, _) ->
     throw({badarg, Other}).
 
@@ -102,7 +127,7 @@ pack_double(F) ->
 
 
 -spec pack_raw(binary()) -> binary().
-%% raw bytes
+%% raw bytes in old spec
 pack_raw(Bin) ->
     case byte_size(Bin) of
         Len when Len < 32->
@@ -111,6 +136,29 @@ pack_raw(Bin) ->
             << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
         Len ->
             << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+    end.
+
+-spec pack_raw2(binary()) -> binary().
+%% raw bytes in new spec
+pack_raw2(Bin) ->
+    case byte_size(Bin) of
+        Len when Len < 32->
+            << 16#C4:8, Len:8/big-unsigned-integer-unit:1, Bin/binary>>;
+        Len when Len < 16#10000 -> % 65536
+            << 16#C5:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
+        Len ->
+            << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+    end.
+
+%% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
+%% EVERY implementation must show its binary length just after type indicator
+%% to skip the damn string if its unreadable.
+-spec pack_string(list(), msgpack_option()) -> binary() | {error, atom()}.
+pack_string(String, _Opt) ->
+    case unicode:characters_to_binary(String) of
+        {error, _Bin, _} -> {error, broken_unicode};
+        {incomplete, _Bin, _} -> {error, incomplete_unicode};
+        Bin -> pack_raw(Bin)
     end.
 
 -spec pack_array([msgpack:object()], list()) -> binary() | no_return().

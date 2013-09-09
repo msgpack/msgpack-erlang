@@ -1,5 +1,8 @@
 -module(msgpack_nif_tests).
 
+-undef(NIF).
+-ifdef(NIF).
+
 -import(msgpack_nif, [pack/1, unpack/1]).
 
 -include_lib("eunit/include/eunit.hrl").
@@ -95,6 +98,8 @@ binary_test_() ->
                     ?assertEqual({ok, <<>>}, unpack(Binary))
             end}
     ].
+
+-endif.
 
 %% long_binary_test_()->
 %%     [

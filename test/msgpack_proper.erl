@@ -1,6 +1,6 @@
 -module(msgpack_proper).
 
--export([choose_type_jsx/0, choose_type_jiffy/0]).
+-export([choose_type/0, choose_type_jsx/0, choose_type_jiffy/0]).
 
 -export([array16_jsx/0, array32_jsx/0,
          map16_jsx/0, map32_jsx/0]).
@@ -10,6 +10,9 @@
 
 
 -include_lib("proper/include/proper.hrl").
+
+%% default behaviour
+choose_type() -> choose_type_jiffy().
 
 choose_type_jsx() ->
     oneof([positive_fixnum(), negative_fixnum(),
