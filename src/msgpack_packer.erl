@@ -38,6 +38,9 @@ pack(false, _) ->
 pack(Bin, _) when is_binary(Bin) ->
     pack_raw(Bin);
 
+pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
+    pack(erlang:atom_to_binary(Atom, unicode), Opt);
+
 %% jiffy interface
 pack({Map}, Opt = ?OPTION{interface=jiffy}) ->
     pack_map(Map, Opt);
