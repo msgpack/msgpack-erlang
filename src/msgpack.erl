@@ -63,8 +63,8 @@ pack(Term) ->
         throw:Exception -> {error, Exception}
     end.
 
-pack(Term, [nif])->
-    msgpack_nif:pack(Term);
+%% pack(Term, [nif])->
+%%     msgpack_nif:pack(Term);
 pack(Term, [Interface]) ->
     try
         msgpack_packer:pack(Term, ?OPTION{interface=Interface,
@@ -115,8 +115,8 @@ unpack_stream(Bin)->
 -spec unpack_stream(binary(), list())->  {msgpack_term(), binary()}
                                              | {error, incomplete}
                                              | {error, {badarg, term()}}.
-unpack_stream(Bin, [nif]) ->
-    msgpack_nif:unpack_stream(Bin);
+%% unpack_stream(Bin, [nif]) ->
+%%     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, [Interface]) ->
     try
         msgpack_unpacker:unpack_stream(Bin,
@@ -153,12 +153,12 @@ basic_test()->
                         {ok, Term} = msgpack:unpack(msgpack:pack(Term)),
                         Term
                 end,
-    MatchFun1 = fun(Term) ->
-                        {ok, Term} = msgpack_nif:unpack(msgpack_nif:pack(Term)),
-                        Term
-                end,
-    Tests = lists:map(MatchFun0, Tests),
-    Tests = lists:map(MatchFun1, Tests).
+    %% MatchFun1 = fun(Term) ->
+    %%                     {ok, Term} = msgpack_nif:unpack(msgpack_nif:pack(Term)),
+    %%                     Term
+    %%             end,
+    Tests = lists:map(MatchFun0, Tests).
+    %% Tests = lists:map(MatchFun1, Tests).
 
 test_p(Len,Term,OrigBin,Len) ->
     {ok, Term}=msgpack:unpack(OrigBin);
