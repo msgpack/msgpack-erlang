@@ -4,6 +4,8 @@ MessagePack Erlang
 
 .. image:: https://secure.travis-ci.org/msgpack/msgpack-erlang.png
 
+.. image:: https://drone.io/github.com/msgpack/msgpack-erlang/status.png
+
 prequisites for runtime
 -----------------------
 
@@ -17,6 +19,9 @@ Now this supports string type.
   1> {ok, "埼玉"} = msgpack:unpack(msgpack:pack("埼玉")).
   {ok,[22524,29577]}
 
+
+There are several options for `msgpack:pack/2` and `msgpack:unpack/2` .
+See `msgpack_list_options()` in `msgpack.hrl`.
 
 
 rebar.config

@@ -52,23 +52,19 @@
 -type object() :: msgpack_term().
 
 -include("msgpack.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
 -spec pack(msgpack_term()) -> binary() | {error, {badarg, term()}}.
-pack(Term) ->
-    try
-        msgpack_packer:pack(Term, ?OPTION{})
-    catch
-        throw:Exception -> {error, Exception}
-    end.
+pack(Term) -> msgpack:pack(Term, []).
 
 %% pack(Term, [nif])->
 %%     msgpack_nif:pack(Term);
-pack(Term, [Interface]) ->
+pack(Term, Opts) ->
+    Option = parse_options(Opts),
     try
-        msgpack_packer:pack(Term, ?OPTION{interface=Interface,
-                                          map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
+        msgpack_packer:pack(Term, Option)
     catch
         throw:Exception -> {error, Exception}
     end.
@@ -83,49 +79,55 @@ pack(Term, [Interface]) ->
                               | {error, not_just_binary} % a term deserilized, but binary remains
                               | {error, incomplete}      % too few binary to deserialize complete binary
                               | {error, {badarg, term()}}.
-unpack(Bin) when is_binary(Bin)  ->
-    case unpack_stream(Bin) of
-        {error, _} = E -> E;
-        {Term, <<>>} -> {ok, Term};
-        {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
-    end;
-unpack(Other) ->
-    {error, {badarg, Other}}.
+unpack(Bin) -> unpack(Bin, []).
 
-unpack(Bin, Opts) when is_binary(Bin) ->
+unpack(Bin, Opts) ->
     case unpack_stream(Bin, Opts) of
         {error, _} = E -> E;
         {Term, <<>>} -> {ok, Term};
         {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
-    end;
-unpack(Other, _) ->
-    {error, {badarg, Other}}.
-
-
--spec unpack_stream(binary()) -> {msgpack_term(), binary()}
-                                       | {error, incomplete}
-                                       | {error, {badarg, term()}}.
-unpack_stream(Bin)->
-    try
-        msgpack_unpacker:unpack_stream(Bin, ?OPTION{})
-    catch
-        throw:Exception -> {error, Exception}
     end.
 
--spec unpack_stream(binary(), list())->  {msgpack_term(), binary()}
-                                             | {error, incomplete}
-                                             | {error, {badarg, term()}}.
+unpack_stream(Bin) -> unpack_stream(Bin, []).
+
+-spec unpack_stream(binary(), msgpack_option())->  {msgpack_term(), binary()}
+                                                       | {error, incomplete}
+                                                       | {error, {badarg, term()}}.
 %% unpack_stream(Bin, [nif]) ->
 %%     msgpack_nif:unpack_stream(Bin);
-unpack_stream(Bin, [Interface]) ->
+unpack_stream(Bin, Opts0) when is_binary(Bin) ->
+    Opts = parse_options(Opts0),
     try
-        msgpack_unpacker:unpack_stream(Bin,
-                                       ?OPTION{interface=Interface,
-                                               map_unpack_fun=msgpack_unpacker:map_unpacker(Interface)})
+        msgpack_unpacker:unpack_stream(Bin, Opts)
     catch
         throw:Exception -> {error, Exception}
-    end.
+    end;
+unpack_stream(Other, _) -> {error, {badarg, Other}}.
 
+
+
+
+-spec parse_options(msgpack_list_options()) -> msgpack:option().
+parse_options(Opt) -> parse_options(Opt, ?OPTION{}).
+
+parse_options([], Opt) -> Opt;
+parse_options([jsx|TL], Opt0) ->
+    Opt = Opt0?OPTION{interface=jsx,
+                      map_unpack_fun=msgpack_unpacker:map_unpacker(jsx)},
+    parse_options(TL, Opt);
+parse_options([jiffy|TL], Opt0) ->
+    Opt = Opt0?OPTION{interface=jiffy,
+                      map_unpack_fun=msgpack_unpacker:map_unpacker(jiffy)},
+    parse_options(TL, Opt);
+parse_options([{allow_atom,Type}|TL], Opt0) ->
+    Opt = case Type of
+              none -> Opt0?OPTION{allow_atom=none};
+              pack -> Opt0?OPTION{allow_atom=pack}
+          end,
+    parse_options(TL, Opt);
+parse_options([{enable_str,Bool}|TL], Opt0) ->
+    Opt = Opt0?OPTION{enable_str=Bool},
+    parse_options(TL, Opt).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unit tests
@@ -146,6 +148,12 @@ test_data()->
      -234, -40000, -16#10000000, -16#100000000,
      42
     ].
+
+enable_str_test() ->
+    ?assertEqual(<<167:8, (<<"saitama">>)/binary >>,
+                 msgpack:pack(<<"saitama">>, [{enable_str, false}])),
+    ?assertEqual(<<196,7,115,97,105,116,97,109,97>>,
+                 msgpack:pack(<<"saitama">>, [{enable_str, true}])). 
 
 basic_test()->
     Tests = test_data(),

@@ -33,3 +33,9 @@
          }).
 -define(OPTION, #options_v2).
 -type msgpack_option() :: #options_v2{}.
+
+-type msgpack_list_options() :: [
+                                 jsx | jiffy,
+                                 {allow_atom, none|pack},
+                                 {enable_str, boolean()}
+                                ].

@@ -140,4 +140,3 @@ string_test() ->
     String = unicode:characters_to_list(UnicodeBin),
     MsgpackStringBin = msgpack:pack(String),
     {ok, String} = msgpack:unpack(MsgpackStringBin).
-
