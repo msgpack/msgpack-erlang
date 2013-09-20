@@ -49,6 +49,15 @@ Stream deserialization
    {Term1, Rest1} = msgpack:unpack_stream(Rest0),
    ...
 
+Compatibility mode
+------------------
+
+To use as same with old spec::
+
+   OldHam = msgpack:pack(Spam, [{enable_str,false}]),
+   {ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).
+
+
 experimental feature: NIF (de)serializer
 ----------------------------------------
 
