@@ -16,22 +16,41 @@
 %%    limitations under the License.
 %%
 
+
+-type msgpack_map_jsx() :: [{msgpack_term(), msgpack_term()}] | [{}].
+
+-type msgpack_map_jiffy() :: {[{msgpack_term(), msgpack_term()}]}.
+
+-type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy().
+
+-type msgpack_map_unpacker() ::
+        fun((binary(), non_neg_integer(), msgpack_map(), msgpack_option()) ->
+                   {msgpack_map(), binary()} | no_return() ).
+
+%% Erlang representation of msgpack data.
+-type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary().
+
+-type msgpack_ext_packer() ::  fun((msgpack_term()) -> {ok, binary()} | {error, any()}).
+-type msgpack_ext_unpacker() :: fun((byte(), binary()) -> {ok, msgpack_term()} | {error, any()}).
+
 -type option() :: [jsx | jiffy | nif].
 
 -record(options_v1, {
           interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 :: fun(),
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 ::
+                                 msgpack_map_unpacker(),
           impl = erlang     :: erlang | nif
          }).
 
 -record(options_v2, {
           interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 :: fun(),
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 ::
+                                 msgpack_map_unpacker(),
           impl = erlang     :: erlang | nif,
           allow_atom = none :: none | pack, %% allows atom when packing
           enable_str = true :: boolean(), %% false for old spec
-          ext_packer = undefined, %%:: fun(term()) -> {ok, binary()} | {error, any()},
-          ext_unpacker = undefined %%:: fun(int(), binary()) -> {ok, term()} | {error, any()},
+          ext_packer = undefined :: msgpack_ext_packer(),
+          ext_unpacker = undefined :: msgpack_ext_unpacker()
          }).
 -define(OPTION, #options_v2).
 -type msgpack_option() :: #options_v2{}.

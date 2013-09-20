@@ -52,7 +52,7 @@ Stream deserialization
 Compatibility mode
 ------------------
 
-To use as same with old spec::
+To use as same with `old spec <https://github.com/msgpack/msgpack/blob/master/spec-old.md>`_ ::
 
    OldHam = msgpack:pack(Spam, [{enable_str,false}]),
    {ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).

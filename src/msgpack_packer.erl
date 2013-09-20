@@ -24,6 +24,8 @@
 
 %% pack them all
 -spec pack(msgpack:object(), option()) -> binary().
+%% pack(Term, ?OPTION{ext_packer=ExtPacker}) when is_function(ExtPacker) ->
+
 pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
 pack(I, _) when is_integer(I) ->
@@ -63,7 +65,7 @@ pack(List, #options_v2{enable_str=true}=Opt)  when is_list(List) ->
             true ->
                 case pack_string(List, Opt) of
                     %% NOTE: due to erlang string format, msgpack can't
-                    %% tell the differenec between string and list of
+                    %% tell the difference between string and list of
                     %% integers. Thus users have to take care not to
                     %% include invalid unicode characters.
                     %% Here to fallback into list(int()).
@@ -126,7 +128,6 @@ pack_uint(N) ->
 pack_double(F) ->
     << 16#CB:8, F:64/big-float-unit:1 >>.
 
-
 -spec pack_raw(binary()) -> binary().
 %% raw bytes in old spec
 pack_raw(Bin) ->
@@ -159,7 +160,17 @@ pack_string(String, _Opt) ->
     case unicode:characters_to_binary(String) of
         {error, _Bin, _} -> {error, broken_unicode};
         {incomplete, _Bin, _} -> {error, incomplete_unicode};
-        Bin -> pack_raw(Bin)
+        Bin ->
+            case byte_size(Bin) of
+                Len when Len < 32->
+                    << 2#101:3, Len:5, Bin/binary >>;
+                Len when Len < 256 ->
+                    << 16#D9:8, Len:8/big-unsigned-integer-unit:1, Bin/binary >>;
+                Len when Len < 16#10000 -> % 65536
+                    << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
+                Len ->
+                    << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+            end
     end.
 
 -spec pack_array([msgpack:object()], list()) -> binary() | no_return().

@@ -39,29 +39,21 @@
 -export([pack/1, unpack/1, unpack_stream/1,
          pack/2, unpack/2, unpack_stream/2]).
 
--type msgpack_map_jsx() :: [{msgpack_term(), msgpack_term()}] | [{}].
-
--type msgpack_map_jiffy() :: {[{msgpack_term(), msgpack_term()}]}.
-
--type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy().
-
-%% Erlang representation of msgpack data.
--type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary().
+-include("msgpack.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% for export
 -export_type([object/0, msgpack_map/0]).
 -type object() :: msgpack_term().
 
--include("msgpack.hrl").
--include_lib("eunit/include/eunit.hrl").
-
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
--spec pack(msgpack_term()) -> binary() | {error, {badarg, term()}}.
+-spec pack(msgpack:object()) -> binary() | {error, {badarg, term()}}.
 pack(Term) -> msgpack:pack(Term, []).
 
 %% pack(Term, [nif])->
 %%     msgpack_nif:pack(Term);
+-spec pack(msgpack:object(), msgpack_list_options()) -> binary().
 pack(Term, Opts) ->
     Option = parse_options(Opts),
     try
@@ -76,12 +68,13 @@ pack(Term, Opts) ->
 %%%      It only decodes ONLY ONE msgpack packets contained in the binary. No packets should not remain.
 %%%      Returns {error, {badarg, term()}} if the input is corrupted.
 %%%      Returns {error, incomplete} if the input is not a full msgpack packet (caller should gather more data and try again).
--spec unpack(binary()) -> {ok, msgpack_term()}
+-spec unpack(binary()) -> {ok, msgpack:object()}
                               | {error, not_just_binary} % a term deserilized, but binary remains
                               | {error, incomplete}      % too few binary to deserialize complete binary
                               | {error, {badarg, term()}}.
 unpack(Bin) -> unpack(Bin, []).
 
+-spec unpack(binary(), msgpack_list_options()) -> {ok, msgpack:object()} | {error, any()}.
 unpack(Bin, Opts) ->
     case unpack_stream(Bin, Opts) of
         {error, _} = E -> E;
@@ -91,7 +84,7 @@ unpack(Bin, Opts) ->
 
 unpack_stream(Bin) -> unpack_stream(Bin, []).
 
--spec unpack_stream(binary(), msgpack_option())->  {msgpack_term(), binary()}
+-spec unpack_stream(binary(), msgpack_option())->  {msgpack:object(), binary()}
                                                        | {error, incomplete}
                                                        | {error, {badarg, term()}}.
 %% unpack_stream(Bin, [nif]) ->
