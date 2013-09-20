@@ -29,7 +29,9 @@
           map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 :: fun(),
           impl = erlang     :: erlang | nif,
           allow_atom = none :: none | pack, %% allows atom when packing
-          enable_str = true :: boolean() %% false for old spec
+          enable_str = true :: boolean(), %% false for old spec
+          ext_packer = undefined, %%:: fun(term()) -> {ok, binary()} | {error, any()},
+          ext_unpacker = undefined %%:: fun(int(), binary()) -> {ok, term()} | {error, any()},
          }).
 -define(OPTION, #options_v2).
 -type msgpack_option() :: #options_v2{}.
