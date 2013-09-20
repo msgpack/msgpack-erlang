@@ -68,18 +68,15 @@ unpack_stream(<<16#D2, V:32/big-signed-integer-unit:1, Rest/binary>>, _) ->
 unpack_stream(<<16#D3, V:64/big-signed-integer-unit:1, Rest/binary>>, _) ->
     {V, Rest};
 
-%% Strings
-unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>,
-              ?OPTION{enable_str=true} = _Opt) ->
-    {unpack_string(V), Rest};
+%% Strings as new spec, or Raw bytes as old spec
+unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>, Opt) ->
+    unpack_string_or_raw(V, Opt, Rest);
 
-unpack_stream(<<16#DA, L:16/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>,
-              ?OPTION{enable_str=true} = _Opt) ->
-    {unpack_string(V), Rest};
+unpack_stream(<<16#DA, L:16/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, Opt) ->
+    unpack_string_or_raw(V, Opt, Rest);
 
-unpack_stream(<<16#DB, L:32/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>,
-              ?OPTION{enable_str=true} = _Opt) ->
-    {unpack_string(V), Rest};
+unpack_stream(<<16#DB, L:32/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, Opt) ->
+    unpack_string_or_raw(V, Opt, Rest);
 
 %% Arrays
 unpack_stream(<<2#1001:4, L:4, Rest/binary>>, Opt) ->
@@ -156,6 +153,10 @@ unpack_map_jsx(Bin, Len, Acc, Opt) ->
     {Value, Rest2} = unpack_stream(Rest, Opt),
     unpack_map_jsx(Rest2, Len-1, [{Key,Value}|Acc], Opt).
 
+unpack_string_or_raw(V, ?OPTION{enable_str=true} = _Opt, Rest) ->
+    {unpack_string(V), Rest};
+unpack_string_or_raw(V, ?OPTION{enable_str=false} = _Opt, Rest) ->
+    {V, Rest}.
 
 %% NOTE: msgpack DOES validate the binary as valid unicode string.
 unpack_string(Binary) ->

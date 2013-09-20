@@ -26,17 +26,19 @@
 
 prop_type() ->
     numtests(128,
-        ?FORALL(Term, choose_type_jsx(),
+        ?FORALL({Term, EnableStr}, {choose_type_jsx(), boolean()},
                 begin
-                    Binary = msgpack:pack(Term, [jsx]),
-                    {ok, Term1} = msgpack:unpack(Binary, [jsx]),
+                    Opt = [jsx, {enable_str, EnableStr}],
+                    Binary = msgpack:pack(Term, Opt),
+                    {ok, Term1} = msgpack:unpack(Binary, Opt),
                     Term =:= Term1
                 end)),
     numtests(300,
-        ?FORALL(Term, choose_type_jiffy(),
+        ?FORALL({Term, EnableStr}, {choose_type_jiffy(), boolean()},
                 begin
-                    Binary = msgpack:pack(Term, [jiffy]),
-                    {ok, Term1} = msgpack:unpack(Binary, [jiffy]),
+                    Opt = [jiffy, {enable_str, EnableStr}],
+                    Binary = msgpack:pack(Term, Opt),
+                    {ok, Term1} = msgpack:unpack(Binary, Opt),
                     Term =:= Term1
                 end)).
 
