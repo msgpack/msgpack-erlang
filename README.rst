@@ -58,6 +58,9 @@ To use as same with `old spec <https://github.com/msgpack/msgpack/blob/master/sp
    {ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).
 
 
+Since 0.2.3 now it's **false by default**.
+
+
 experimental feature: NIF (de)serializer
 ----------------------------------------
 
