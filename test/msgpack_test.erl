@@ -115,13 +115,13 @@ issue_jsx_5_test() ->
                         ]
             }
            ],
-    Encoded = msgpack:pack(Term, [jsx]),
+    Encoded = msgpack:pack(Term, [jsx,{enable_str,true}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [jsx]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [jsx,{enable_str,true}]),
     ?assertEqual(Term, Decoded).
 
 
@@ -134,13 +134,13 @@ issue_jiffy_5_test() ->
                          ]
              }
             ]},
-    Encoded = msgpack:pack(Term, [jiffy]),
+    Encoded = msgpack:pack(Term, [jiffy,{enable_str,true}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [jiffy]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [jiffy,{enable_str,true}]),
     ?assertEqual(Term, Decoded).
 
 
