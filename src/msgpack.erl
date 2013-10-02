@@ -40,7 +40,6 @@
          pack/2, unpack/2, unpack_stream/2]).
 
 -include("msgpack.hrl").
--include_lib("eunit/include/eunit.hrl").
 
 %% for export
 -export_type([object/0, msgpack_map/0]).
