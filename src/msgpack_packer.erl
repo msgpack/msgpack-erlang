@@ -95,7 +95,7 @@ pack_int(N) when N > -128 ->
 pack_int(N) when N > -32768 ->
     << 16#D1:8, N:16/big-signed-integer-unit:1 >>;
 %% int 32
-pack_int(N) when (N band 16#FFFFFFFF) =:= N ->
+pack_int(N) when  N > -2147483648 ->
     << 16#D2:8, N:32/big-signed-integer-unit:1 >>;
 %% int 64
 pack_int(N) ->
