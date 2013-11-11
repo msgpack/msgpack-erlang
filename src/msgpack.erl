@@ -92,24 +92,12 @@ unpack_stream(Bin) -> unpack_stream(Bin, []).
 %%     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
-    R = try msgpack_unpacker:unpack_stream(Bin, Opts) of
-            Res -> Res
-        catch
-            trhow:incomplete -> {error, incomplete};
-            throw:Exception -> {error, Exception}
-        end,
-    case R of
-        {error, incomplete} ->
-            {error, incomplete};
-        {error, {badarg, Other}} ->
-            {error, {badarg, Other}};
-        {Term, B} when is_binary(B) ->
-            {Term, B}
+    try
+        msgpack_unpacker:unpack_stream(Bin, Opts)
+    catch
+        throw:Exception -> {error, Exception}
     end;
 unpack_stream(Other, _) -> {error, {badarg, Other}}.
-
-
-
 
 -spec parse_options(msgpack_list_options()) -> msgpack:option().
 parse_options(Opt) -> parse_options(Opt, ?OPTION{}).
