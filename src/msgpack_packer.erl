@@ -263,7 +263,7 @@ pack_array(L, Opt) ->
             <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>
     end.
 
--spec pack_map(msgpack:msgpack_map(), list(option())) -> binary() | no_return().
+-spec pack_map(msgpack:msgpack_map(), msgpack_option() -> binary() | no_return().
 pack_map([{Ka, Va}], Opt)->
     << 2#1000:4, 1:4/integer-unit:1,
        (pack(Ka, Opt))/binary, (pack(Va, Opt))/binary >>;
