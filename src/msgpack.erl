@@ -84,9 +84,9 @@ unpack(Bin, Opts) ->
 
 unpack_stream(Bin) -> unpack_stream(Bin, []).
 
--spec unpack_stream(binary(), msgpack_option())->  {msgpack:object(), binary()}
-                                                       | {error, incomplete}
-                                                       | {error, {badarg, term()}}.
+-spec unpack_stream(binary(), msgpack_list_options())->  {msgpack:object(), binary()}
+                                                             | {error, incomplete}
+                                                             | {error, {badarg, term()}}.
 %% unpack_stream(Bin, [nif]) ->
 %%     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
