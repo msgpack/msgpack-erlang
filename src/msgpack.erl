@@ -95,6 +95,7 @@ unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     try
         msgpack_unpacker:unpack_stream(Bin, Opts)
     catch
+        trhow:incomplete -> {error, incomplete};
         throw:Exception -> {error, Exception}
     end;
 unpack_stream(Other, _) -> {error, {badarg, Other}}.
