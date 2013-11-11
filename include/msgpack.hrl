@@ -28,7 +28,7 @@
                    {msgpack_map(), binary()} | no_return() ).
 
 %% Erlang representation of msgpack data.
--type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary().
+-type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary() | atom().
 
 -type msgpack_ext_packer() ::  fun((msgpack_term()) -> {ok, binary()} | {error, any()}).
 -type msgpack_ext_unpacker() :: fun((byte(), binary()) -> {ok, msgpack_term()} | {error, any()}).

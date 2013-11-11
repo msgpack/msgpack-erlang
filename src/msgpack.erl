@@ -99,7 +99,7 @@ unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     end;
 unpack_stream(Other, _) -> {error, {badarg, Other}}.
 
--spec parse_options(msgpack_list_options()) -> msgpack:option().
+-spec parse_options(msgpack_list_options()) -> msgpack_option().
 parse_options(Opt) -> parse_options(Opt, ?OPTION{}).
 
 parse_options([], Opt) -> Opt;
