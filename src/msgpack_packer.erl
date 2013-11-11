@@ -23,7 +23,7 @@
 -include("msgpack.hrl").
 
 %% pack them all
--spec pack(msgpack:object(), option()) -> binary().
+-spec pack(msgpack:object(), msgpack_option()) -> binary().
 %% pack(Term, ?OPTION{ext_packer=ExtPacker}) when is_function(ExtPacker) ->
 
 pack(I, _) when is_integer(I) andalso I < 0 ->
