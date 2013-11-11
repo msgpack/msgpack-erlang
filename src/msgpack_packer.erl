@@ -173,7 +173,7 @@ pack_string(String, _Opt) ->
             end
     end.
 
--spec pack_array([msgpack:object()], list()) -> binary() | no_return().
+-spec pack_array([msgpack:object()], msgpack_option()) -> binary() | no_return().
 pack_array([], _) ->
     << 2#1001:4, 0:4/integer-unit:1 >>;
 
