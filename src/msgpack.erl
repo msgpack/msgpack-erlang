@@ -92,8 +92,8 @@ unpack_stream(Bin) -> unpack_stream(Bin, []).
 %%     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
-    try
-        msgpack_unpacker:unpack_stream(Bin, Opts)
+    try msgpack_unpacker:unpack_stream(Bin, Opts) of
+        Res -> Res
     catch
         trhow:incomplete -> {error, incomplete};
         throw:Exception -> {error, Exception}
