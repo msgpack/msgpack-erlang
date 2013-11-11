@@ -182,9 +182,9 @@ other_test()->
     ?assertEqual({error,incomplete},msgpack:unpack(<<>>)).
 
 error_test()->
-    ?assertEqual({error,{badarg, atom}}, msgpack:pack(atom)),
+    ?assertEqual({error,{badarg, atom}}, msgpack:pack(atom, [])),
     Term = {"hoge", "hage", atom},
-    ?assertEqual({error,{badarg, Term}}, msgpack:pack(Term)).
+    ?assertEqual({error,{badarg, Term}}, msgpack:pack(Term, [])).
 
 long_binary_test()->
     A = msgpack:pack(1),
