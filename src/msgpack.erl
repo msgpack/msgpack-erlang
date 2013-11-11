@@ -71,13 +71,14 @@ pack(Term, Opts) ->
 -spec unpack(binary()) -> {ok, msgpack:object()}
                               | {error, not_just_binary} % a term deserilized, but binary remains
                               | {error, incomplete}      % too few binary to deserialize complete binary
-                              | {error, {badarg, term()}}.
+                              | {error, {badarg, term()}}
+                              | {error, any()}.
 unpack(Bin) -> unpack(Bin, []).
 
 -spec unpack(binary(), msgpack_list_options()) -> {ok, msgpack:object()} | {error, any()}.
 unpack(Bin, Opts) ->
     case unpack_stream(Bin, Opts) of
-        {error, _} = E -> E;
+        {error, E} -> {error, E};
         {Term, <<>>} -> {ok, Term};
         {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
     end.
