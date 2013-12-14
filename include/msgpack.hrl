@@ -28,16 +28,21 @@
                    {msgpack_map(), binary()} | no_return() ).
 
 %% Erlang representation of msgpack data.
--type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary().
+-type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() |
+                        msgpack_map_jiffy() | integer() | float() | binary().
 
-%% @doc ext_packer function should fallback to normal msgpack:pack/2 if 
--type msgpack_ext_packer() ::  fun((any(), msgpack:options()) -> {ok, binary()} | {error, any()}).
--type msgpack_ext_unpacker() :: fun((byte(), binary()) -> {ok, msgpack_term()} | {error, any()}).
+%% @doc ext_packer that packs only tuples with length > 2
+-type msgpack_ext_packer()   :: fun((tuple(), msgpack:options()) ->
+                                           {ok, {Type::byte(), Data::binary()}} |
+                                           {error, any()}).
+-type msgpack_ext_unpacker() :: fun((byte(), binary()) ->
+                                           {ok, msgpack_term()} | {error, any()}).
 
 -type msgpack_list_options() :: [
                                  jsx | jiffy | %% nif |
                                  {allow_atom, none|pack} |
-                                 {enable_str, boolean()}
+                                 {enable_str, boolean()} |
+                                 {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()}}
                                 ].
 
 -record(options_v1, {

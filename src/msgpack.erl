@@ -61,7 +61,7 @@ pack(Term, Opts) ->
         throw:Exception -> {error, Exception}
     end.
 
--spec pack_ext(any(), msgpack:options()) -> binary().
+-spec pack_ext(any(), msgpack:options()) -> {ok, binary()} | {error, any()}.
 pack_ext(Any, Opts) ->
     Option = parse_options(Opts),
     try
@@ -129,6 +129,9 @@ parse_options([{allow_atom,Type}|TL], Opt0) ->
     parse_options(TL, Opt);
 parse_options([{enable_str,Bool}|TL], Opt0) ->
     Opt = Opt0?OPTION{enable_str=Bool},
+    parse_options(TL, Opt);
+parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) ->
+    Opt = Opt0?OPTION{ext_packer=Packer, ext_unpacker=Unpacker},
     parse_options(TL, Opt).
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

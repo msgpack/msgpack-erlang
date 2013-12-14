@@ -18,7 +18,7 @@
 
 -module(msgpack_packer).
 
--export([pack/2, pack_ext/2]).
+-export([pack/2, pack_ext/3]).
 
 -include("msgpack.hrl").
 
@@ -79,6 +79,15 @@ pack(List, #options_v2{enable_str=true}=Opt)  when is_list(List) ->
 
 pack(List, Opt)  when is_list(List) ->
     pack_array(List, Opt);
+
+%% Packing ext type with user defined packer function
+pack(Any, _Opt = ?OPTION{ext_packer=Packer, original_list=Orig})
+  when is_tuple(Any) andalso is_function(Packer) ->
+
+    case pack_ext(Any, Packer, Orig) of
+        {ok, Binary} -> Binary;
+        {error, E} -> throw:error(E)
+    end;
 
 pack(Other, _) ->
     throw({badarg, Other}).
@@ -298,8 +307,24 @@ pack_map(M, Opt)->
               (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>
     end.
 
--spec pack_ext(any(), ?OPTION{}) -> {ok, binary()} | {error, any()}.
-pack_ext(Term, ?OPTION{ext_packer=undefined} = Opt) -> pack(Term, Opt);
-pack_ext(Term, ?OPTION{ext_packer=Packer, original_list=Orig} = _Opt) when is_function(Packer) ->
-    Packer(Term, Orig).
-
+-spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
+pack_ext(Any, Packer, Opt) ->
+    case Packer(Any, Opt) of
+        {ok, {Type, Data}} when 0 < Type andalso Type < 16#100 ->
+            Bin = case byte_size(Data) of
+                      1  -> <<16#D4, Type:8, Data/binary>>;
+                      2  -> <<16#D5, Type:8, Data/binary>>;
+                      4  -> <<16#D6, Type:8, Data/binary>>;
+                      8  -> <<16#D7, Type:8, Data/binary>>;
+                      16 -> <<16#D8, Type:8, Data/binary>>;
+                      Len when Len < 16#100 ->
+                          <<16#C7, Len:8, Type:8, Data/binary>>;
+                      Len when Len < 16#10000 ->
+                          <<16#C8, Len:16, Type:8, Data/binary>>;
+                      Len when Len < 16#100000000 ->
+                          <<16#C9, Len:32, Type:8, Data/binary>>
+                  end,
+            {ok, Bin};
+        {error, E} ->
+            {error, E}
+    end.
