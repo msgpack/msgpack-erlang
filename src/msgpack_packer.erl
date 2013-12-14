@@ -86,7 +86,7 @@ pack(Any, _Opt = ?OPTION{ext_packer=Packer, original_list=Orig})
 
     case pack_ext(Any, Packer, Orig) of
         {ok, Binary} -> Binary;
-        {error, E} -> throw:error(E)
+        {error, E} -> throw({error, E})
     end;
 
 pack(Other, _) ->
