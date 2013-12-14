@@ -21,7 +21,7 @@ Now this supports string type.
 
 
 There are several options for `msgpack:pack/2` and `msgpack:unpack/2` .
-See `msgpack_list_options()` in `msgpack.hrl`.
+See `msgpack:options()` in `msgpack.hrl`.
 
 
 rebar.config
@@ -48,6 +48,25 @@ Stream deserialization
    {Term0, Rest0} = msgpack:unpack_stream(Binary),
    {Term1, Rest1} = msgpack:unpack_stream(Rest0),
    ...
+
+Ext type
+--------
+
+Now msgpack-erlang supports ext type. Now you can serialize everything
+with your original (de)serializer. That will enable us to handle
+erlang- native types like `pid()`, `ref()` contained in `tuple()`. See
+`test/msgpack_ext_example_tests.erl` for example code.
+
+::
+
+   Packer = fun({ref, Ref}, Opt) when is_ref(Ref) -> {ok, {12, term_to_binary(Ref)}} end,
+   Unpacker = fun(12, Bin) -> {ok, {ref, binary_to_term(Ref)}},
+   Ref = make_ref(),
+   Opt = [{ext,{Packer,Unpacker}}],
+   {ok, {foobar, Ref}} = msgpack:unpack(msgpack:pack({foobar, Ref}, Opt), Opt).
+
+
+This is still experimental feature, so I'm waiting for your feedback.
 
 Compatibility mode
 ------------------
