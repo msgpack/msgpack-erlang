@@ -18,13 +18,12 @@
 
 -module(msgpack_packer).
 
--export([pack/2]).
+-export([pack/2, pack_ext/2]).
 
 -include("msgpack.hrl").
 
 %% pack them all
 -spec pack(msgpack:object(), msgpack_option()) -> binary().
-%% pack(Term, ?OPTION{ext_packer=ExtPacker}) when is_function(ExtPacker) ->
 
 pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
@@ -298,3 +297,9 @@ pack_map(M, Opt)->
             <<16#DF:8, Len:32/big-unsigned-integer-unit:1,
               (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>
     end.
+
+-spec pack_ext(any(), ?OPTION{}) -> {ok, binary()} | {error, any()}.
+pack_ext(Term, ?OPTION{ext_packer=undefined} = Opt) -> pack(Term, Opt);
+pack_ext(Term, ?OPTION{ext_packer=Packer, original_list=Orig} = _Opt) when is_function(Packer) ->
+    Packer(Term, Orig).
+

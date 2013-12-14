@@ -37,7 +37,8 @@
 -module(msgpack).
 
 -export([pack/1, unpack/1, unpack_stream/1,
-         pack/2, unpack/2, unpack_stream/2]).
+         pack/2, unpack/2, unpack_stream/2,
+         pack_ext/2]).
 
 -include("msgpack.hrl").
 
@@ -51,8 +52,6 @@
 -spec pack(msgpack:object()) -> binary() | {error, {badarg, term()}}.
 pack(Term) -> msgpack:pack(Term, []).
 
-%% pack(Term, [nif])->
-%%     msgpack_nif:pack(Term);
 -spec pack(msgpack:object(), msgpack:options()) -> binary().
 pack(Term, Opts) ->
     Option = parse_options(Opts),
@@ -62,7 +61,14 @@ pack(Term, Opts) ->
         throw:Exception -> {error, Exception}
     end.
 
-
+-spec pack_ext(any(), msgpack:options()) -> binary().
+pack_ext(Any, Opts) ->
+    Option = parse_options(Opts),
+    try
+        msgpack_packer:pack_ext(Any, Option)
+    catch
+        throw:Exception -> {error, Exception}
+    end.
 
 %%% @doc Decode an msgpack binary into an erlang terms.
 %%%      It only decodes ONLY ONE msgpack packets contained in the binary. No packets should not remain.
@@ -103,7 +109,7 @@ unpack_stream(Other, _) -> {error, {badarg, Other}}.
 
 %% @private
 -spec parse_options(msgpack:options()) -> msgpack_option().
-parse_options(Opt) -> parse_options(Opt, ?OPTION{}).
+parse_options(Opt) -> parse_options(Opt, ?OPTION{original_list=Opt}).
 
 %% @private
 parse_options([], Opt) -> Opt;

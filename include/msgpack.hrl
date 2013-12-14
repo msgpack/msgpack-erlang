@@ -30,8 +30,15 @@
 %% Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map_jsx() | msgpack_map_jiffy() | integer() | float() | binary().
 
--type msgpack_ext_packer() ::  fun((msgpack_term()) -> {ok, binary()} | {error, any()}).
+%% @doc ext_packer function should fallback to normal msgpack:pack/2 if 
+-type msgpack_ext_packer() ::  fun((any(), msgpack:options()) -> {ok, binary()} | {error, any()}).
 -type msgpack_ext_unpacker() :: fun((byte(), binary()) -> {ok, msgpack_term()} | {error, any()}).
+
+-type msgpack_list_options() :: [
+                                 jsx | jiffy | %% nif |
+                                 {allow_atom, none|pack} |
+                                 {enable_str, boolean()}
+                                ].
 
 -record(options_v1, {
           interface = jiffy :: jiffy | jsx,
@@ -48,13 +55,9 @@
           allow_atom = none  :: none | pack, %% allows atom when packing
           enable_str = false :: boolean(), %% true for new spec
           ext_packer = undefined :: msgpack_ext_packer(),
-          ext_unpacker = undefined :: msgpack_ext_unpacker()
+          ext_unpacker = undefined :: msgpack_ext_unpacker(),
+          original_list = []       :: msgpack_list_options()
          }).
+
 -define(OPTION, #options_v2).
 -type msgpack_option() :: #options_v2{}.
-
--type msgpack_list_options() :: [
-                                 jsx | jiffy | %% nif |
-                                 {allow_atom, none|pack} |
-                                 {enable_str, boolean()}
-                                ].
