@@ -23,7 +23,7 @@
 -include("msgpack.hrl").
 
 %% pack them all
--spec pack(msgpack:object(), option()) -> binary().
+-spec pack(msgpack:object(), msgpack_option()) -> binary().
 %% pack(Term, ?OPTION{ext_packer=ExtPacker}) when is_function(ExtPacker) ->
 
 pack(I, _) when is_integer(I) andalso I < 0 ->
@@ -263,7 +263,7 @@ pack_array(L, Opt) ->
             <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>
     end.
 
--spec pack_map(msgpack:msgpack_map(), list(option())) -> binary() | no_return().
+-spec pack_map(msgpack:msgpack_map(), msgpack_option()) -> binary() | no_return().
 pack_map([{Ka, Va}], Opt)->
     << 2#1000:4, 1:4/integer-unit:1,
        (pack(Ka, Opt))/binary, (pack(Va, Opt))/binary >>;

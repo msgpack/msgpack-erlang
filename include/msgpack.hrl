@@ -33,8 +33,6 @@
 -type msgpack_ext_packer() ::  fun((msgpack_term()) -> {ok, binary()} | {error, any()}).
 -type msgpack_ext_unpacker() :: fun((byte(), binary()) -> {ok, msgpack_term()} | {error, any()}).
 
--type option() :: [jsx | jiffy | nif].
-
 -record(options_v1, {
           interface = jiffy :: jiffy | jsx,
           map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 ::
@@ -56,7 +54,7 @@
 -type msgpack_option() :: #options_v2{}.
 
 -type msgpack_list_options() :: [
-                                 jsx | jiffy |
+                                 jsx | jiffy | %% nif |
                                  {allow_atom, none|pack} |
                                  {enable_str, boolean()}
                                 ].

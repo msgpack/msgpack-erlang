@@ -42,8 +42,9 @@
 -include("msgpack.hrl").
 
 %% for export
--export_type([object/0, msgpack_map/0]).
+-export_type([object/0, msgpack_map/0, options/0]).
 -type object() :: msgpack_term().
+-type options() :: msgpack_list_options().
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
@@ -52,7 +53,7 @@ pack(Term) -> msgpack:pack(Term, []).
 
 %% pack(Term, [nif])->
 %%     msgpack_nif:pack(Term);
--spec pack(msgpack:object(), msgpack_list_options()) -> binary().
+-spec pack(msgpack:object(), msgpack:options()) -> binary().
 pack(Term, Opts) ->
     Option = parse_options(Opts),
     try
@@ -73,7 +74,7 @@ pack(Term, Opts) ->
                               | {error, {badarg, term()}}.
 unpack(Bin) -> unpack(Bin, []).
 
--spec unpack(binary(), msgpack_list_options()) -> {ok, msgpack:object()} | {error, any()}.
+-spec unpack(binary(), msgpack:options()) -> {ok, msgpack:object()} | {error, any()}.
 unpack(Bin, Opts) ->
     case unpack_stream(Bin, Opts) of
         {error, _} = E -> E;
@@ -81,13 +82,14 @@ unpack(Bin, Opts) ->
         {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
     end.
 
+-spec unpack_stream(binary()) -> {msgpack:object(), binary()}
+                                     | {error, incomplete}
+                                     | {error, {badarg, term()}}.
 unpack_stream(Bin) -> unpack_stream(Bin, []).
 
 -spec unpack_stream(binary(), msgpack_option())->  {msgpack:object(), binary()}
                                                        | {error, incomplete}
                                                        | {error, {badarg, term()}}.
-%% unpack_stream(Bin, [nif]) ->
-%%     msgpack_nif:unpack_stream(Bin);
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
     try
@@ -97,12 +99,11 @@ unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     end;
 unpack_stream(Other, _) -> {error, {badarg, Other}}.
 
-
-
-
--spec parse_options(msgpack_list_options()) -> msgpack:option().
+%% @private
+-spec parse_options(msgpack:options()) -> msgpack_option().
 parse_options(Opt) -> parse_options(Opt, ?OPTION{}).
 
+%% @private
 parse_options([], Opt) -> Opt;
 parse_options([jsx|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jsx,
