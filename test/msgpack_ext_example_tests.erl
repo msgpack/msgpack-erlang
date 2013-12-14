@@ -18,6 +18,8 @@
 
 -module(msgpack_ext_example_tests).
 
+-compile(export_all).
+
 -include_lib("eunit/include/eunit.hrl").
 
 ext_test() ->
@@ -44,3 +46,17 @@ uuid_example_test() ->
     Bin = msgpack:pack(UUID0, Opt),
     {ok, UUID0} = msgpack:unpack(Bin, Opt).
 
+pack_native({native, Term}, _) when is_pid(Term) orelse
+                                 is_reference(Term) orelse
+                                 is_port(Term) orelse
+                                 is_tuple(Term) orelse
+                                 is_function(Term) ->
+    {ok, {42, term_to_binary(Term)}}.
+
+unpack_native(42, Bin) ->
+    {ok, {native, binary_to_term(Bin)}}.
+
+native_test() ->
+    Opt = [{ext, {fun pack_native/2, fun unpack_native/2}}],
+    Term = {native, {self(), make_ref(), foobar, fun() -> ok end}},
+    {ok, Term} = msgpack:unpack(msgpack:pack(Term, Opt), Opt).
