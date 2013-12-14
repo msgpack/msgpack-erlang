@@ -2,6 +2,8 @@ language: erlang
 notifications:
   email: false
 otp_release:
+  - R16B03
+  - R16B02
   - R16B01
   - R16B
   - R15B03
