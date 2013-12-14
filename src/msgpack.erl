@@ -120,6 +120,10 @@ parse_options([{allow_atom,Type}|TL], Opt0) ->
 parse_options([{enable_str,Bool}|TL], Opt0) ->
     Opt = Opt0?OPTION{enable_str=Bool},
     parse_options(TL, Opt);
+parse_options([{ext, Module}|TL], Opt0) when is_atom(Module) ->
+    Opt = Opt0?OPTION{ext_packer=fun Module:pack_ext/2,
+                      ext_unpacker=fun Module:unpack_ext/2},
+    parse_options(TL, Opt);
 parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) when
       is_function(Packer, 2) andalso is_function(Unpacker, 2) ->
     Opt = Opt0?OPTION{ext_packer=Packer, ext_unpacker=Unpacker},

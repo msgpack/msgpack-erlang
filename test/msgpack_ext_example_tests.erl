@@ -22,6 +22,8 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+-behaviour(msgpack_ext).
+
 ext_test() ->
     Packer = fun({foobar, Me}, _) ->
                      {ok, {12, term_to_binary(Me)}}
@@ -58,5 +60,13 @@ unpack_native(42, Bin) ->
 
 native_test() ->
     Opt = [{ext, {fun pack_native/2, fun unpack_native/2}}],
+    Term = {native, {self(), make_ref(), foobar, fun() -> ok end}},
+    {ok, Term} = msgpack:unpack(msgpack:pack(Term, Opt), Opt).
+
+pack_ext(T, O) -> pack_native(T, O).
+unpack_ext(I, B) -> unpack_native(I, B).
+
+behaviour_test() ->
+    Opt = [{ext, ?MODULE}],
     Term = {native, {self(), make_ref(), foobar, fun() -> ok end}},
     {ok, Term} = msgpack:unpack(msgpack:pack(Term, Opt), Opt).
