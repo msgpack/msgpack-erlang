@@ -21,6 +21,7 @@
 -export([pack/2, pack_ext/3]).
 
 -include("msgpack.hrl").
+-include_lib("eunit/include/eunit.hrl").
 
 %% pack them all
 -spec pack(msgpack:object(), msgpack_option()) -> binary().

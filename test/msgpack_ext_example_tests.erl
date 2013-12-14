@@ -31,3 +31,16 @@ ext_test() ->
     Opt = [{ext,{Packer,Unpacker}}],
     Bin = msgpack:pack({foobar, Ref}, Opt),
     {ok, {foobar, Ref}} = msgpack:unpack(Bin, Opt).
+
+uuid_example_test() ->
+    Packer =   fun({uuid, UUID}, _) when is_binary(UUID) ->
+                       {ok, {42, UUID}}
+               end,
+    Unpacker = fun(42, Bin0) ->
+                       {ok, {uuid, Bin0}}
+               end,
+    UUID0 = {uuid, <<221,85,73,226,102,90,82,118,40,26,166,74,52,42,61,207>>},
+    Opt = [{ext,{Packer,Unpacker}}],
+    Bin = msgpack:pack(UUID0, Opt),
+    {ok, UUID0} = msgpack:unpack(Bin, Opt).
+
