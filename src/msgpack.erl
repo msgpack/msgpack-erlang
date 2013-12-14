@@ -37,8 +37,7 @@
 -module(msgpack).
 
 -export([pack/1, unpack/1, unpack_stream/1,
-         pack/2, unpack/2, unpack_stream/2,
-         pack_ext/2]).
+         pack/2, unpack/2, unpack_stream/2]).
 
 -include("msgpack.hrl").
 
@@ -57,15 +56,6 @@ pack(Term, Opts) ->
     Option = parse_options(Opts),
     try
         msgpack_packer:pack(Term, Option)
-    catch
-        throw:Exception -> {error, Exception}
-    end.
-
--spec pack_ext(any(), msgpack:options()) -> {ok, binary()} | {error, any()}.
-pack_ext(Any, Opts) ->
-    Option = parse_options(Opts),
-    try
-        msgpack_packer:pack_ext(Any, Option)
     catch
         throw:Exception -> {error, Exception}
     end.
