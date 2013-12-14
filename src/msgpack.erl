@@ -79,7 +79,9 @@ unpack(Bin, Opts) ->
     case unpack_stream(Bin, Opts) of
         {error, _} = E -> E;
         {Term, <<>>} -> {ok, Term};
-        {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
+        {_, Binary} when is_binary(Binary)
+                         andalso byte_size(Binary) > 0 ->
+            {error, not_just_binary}
     end.
 
 -spec unpack_stream(binary()) -> {msgpack:object(), binary()}
