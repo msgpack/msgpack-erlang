@@ -63,7 +63,7 @@ erlang- native types like `pid()`, `ref()` contained in `tuple()`. See
    Unpacker = fun(12, Bin) -> {ok, {ref, binary_to_term(Ref)}},
    Ref = make_ref(),
    Opt = [{ext,{Packer,Unpacker}}],
-   {ok, {foobar, Ref}} = msgpack:unpack(msgpack:pack({foobar, Ref}, Opt), Opt).
+   {ok, {ref, Ref}} = msgpack:unpack(msgpack:pack({ref, Ref}, Opt), Opt).
 
 
 This is still experimental feature, so I'm waiting for your feedback.
