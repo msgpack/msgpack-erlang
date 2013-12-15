@@ -199,7 +199,7 @@ unpack_string_or_raw(V, ?OPTION{enable_str=false} = _Opt, Rest) ->
 unpack_string(Binary) ->
     case unicode:characters_to_list(Binary) of
         {error, _S, _Rest} -> throw({error, {invalid_string, Binary}});
-        {imcomplete, _S, _Rest} -> throw({error, {invalid_string, Binary}});
+        {incomplete, _S, _Rest} -> throw({error, {invalid_string, Binary}});
         String -> String
     end.
 
