@@ -74,7 +74,9 @@ OldHam = msgpack:pack(Spam, [{enable_str,false}]),
 
 Since 0.2.3 now it's **false by default**.
 
+## Further tests
 
+See [msgpack-erlang-tests](http://github.com/kuenishi/msgpack-erlang-tests) for further tests
 
 ## License
 
