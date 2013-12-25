@@ -19,6 +19,8 @@
 
 -module(msgpack_test).
 
+-import(msgpack, [pack/2, unpack/2, pack/1, unpack/1]).
+
 -include_lib("eunit/include/eunit.hrl").
 
 -ifdef(DO_MSGPACK_CROSSLANG_TEST).
@@ -151,3 +153,130 @@ string_test() ->
     String = unicode:characters_to_list(UnicodeBin),
     MsgpackStringBin = msgpack:pack(String),
     {ok, String} = msgpack:unpack(MsgpackStringBin).
+
+
+
+unpack_test_() ->
+    [
+     {"not binary",
+      ?_assertEqual({error, {badarg, []}}, unpack([]))},
+
+     {"incomplete: null binary",
+      ?_assertEqual({error, incomplete}, unpack(<<>>))},
+
+     {"incomplete: unknown binary",
+      ?_assertEqual({error, incomplete}, unpack(<<16#DA>>))}
+    ].
+
+array_test_()->
+    [
+     {"length 16",
+      fun() ->
+              List = lists:seq(0, 16),
+              Binary = pack(List),
+              ?assertEqual({ok, List}, unpack(Binary))
+      end},
+     {"length 32",
+      fun() ->
+              List = lists:seq(0, 16#010000),
+              Binary = pack(List),
+              ?assertEqual({ok, List}, unpack(Binary))
+      end},
+     {"empty",
+      fun() ->
+              EmptyList = [],
+              Binary = pack(EmptyList),
+              ?assertEqual({ok, EmptyList}, unpack(Binary))
+      end}
+    ].
+
+map_test_()->
+    [
+     {"jiffy length 16",
+      fun() ->
+              Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
+              Binary = pack(Map, [jiffy]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+      end},
+     {"jiffy length 32",
+      fun() ->
+              Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
+              Binary = pack(Map, [jiffy]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+      end},
+     {"jiffy empty",
+      fun() ->
+              EmptyMap = {[]},
+              Binary = pack(EmptyMap, [jiffy]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jiffy]))
+      end},
+     {"jsx length 16",
+      fun() ->
+              Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
+              Binary = pack(Map, [jsx]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+      end},
+     {"jsx length 32",
+      fun() ->
+              Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
+              Binary = pack(Map, [jsx]),
+              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+      end},
+     {"jsx empty",
+      fun() ->
+              EmptyMap = [{}],
+              Binary = pack(EmptyMap, [jsx]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jsx]))
+      end}
+    ].
+
+int_test_() ->
+    [
+     {"",
+      fun() ->
+              Term = -2147483649,
+              Binary = pack(Term),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end}
+    ].
+
+error_test_()->
+    [
+     {"badarg atom",
+      ?_assertEqual({error, {badarg, atom}},
+                    pack(atom))},
+     {"badarg tuple",
+      fun() ->
+              Term = {"hoge", "hage", atom},
+              ?assertEqual({error, {badarg, Term}},
+                           pack(Term))
+      end}
+    ].
+
+binary_test_() ->
+    [
+     {"0 byte",
+      fun() ->
+              Binary = pack(<<>>),
+              ?assertEqual({ok, <<>>}, unpack(Binary))
+      end}
+    ].
+
+%% long_binary_test_()->
+%%     [
+%%         {"long binary",
+%%             fun() ->
+%%                     A = pack(1),
+%%                     B = pack(10),
+%%                     C = pack(100),
+%%                     ?assertEqual({[1,10,100], <<>>},
+%%                                  unpack(list_to_binary([A, B, C])))
+%%             end}
+%%     ].
+
+%% benchmark_test()->
+%%     Data = [test_data() || _ <- lists:seq(0, 10000)],
+%%     {ok, S} = ?debugTime("  serialize", pack(Data)),
+%%     {ok, Data} = ?debugTime("deserialize", unpack(S)),
+%%     ?debugFmt("for ~p KB test data.", [byte_size(S) div 1024]),
+%%     ok.
