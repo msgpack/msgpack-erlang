@@ -24,9 +24,13 @@
 -define(ERLANG_TERM, 131).
 -define(TERM_OPTION, [{enable_str,true},{ext,?MODULE},{allow_atom,none}]).
 
+%% @doc experimental
+-spec to_binary(term()) -> binary().
 to_binary(Term) ->
     msgpack:pack(Term, ?TERM_OPTION).
 
+%% @doc experimental
+-spec from_binary(binary()) -> term().
 from_binary(Bin) ->
     {ok, Term} = msgpack:unpack(Bin, ?TERM_OPTION),
     Term.
@@ -35,6 +39,15 @@ from_binary(Bin) ->
                       {ok, {Type::byte(), Data::binary()}} |
                       {error, any()}.
 pack_ext(Term, _Options) ->
+    %% there are still much space to improve:
+    %% for example, pid() can be compressed much
+    %% more by using msgpack integers.
+    %% reference type is also bigger, because
+    %% it uses four bytes per int, which includes
+    %% four integers. Both types include node name
+    %% which is atom including two bytes length.
+    %% usually atom/string less than length 32 can
+    %% coded as single byte indicating its length.
     {ok, {?ERLANG_TERM, erlang:term_to_binary(Term)}}.
 
 -spec unpack_ext(Type::byte(), Data::binary()) ->
