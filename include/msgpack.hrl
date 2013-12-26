@@ -35,8 +35,11 @@
 -type msgpack_ext_packer()   :: fun((tuple(), msgpack:options()) ->
                                            {ok, {Type::byte(), Data::binary()}} |
                                            {error, any()}).
--type msgpack_ext_unpacker() :: fun((byte(), binary()) ->
-                                           {ok, msgpack_term()} | {error, any()}).
+-type msgpack_ext_unpacker() ::
+        fun((byte(), binary(), msgpack:options()) ->
+                   {ok, msgpack_term()} | {error, any()})
+      | fun((byte(), binary()) ->
+                   {ok, msgpack_term()} | {error, any()}).
 
 -type msgpack_list_options() :: [
                                  jsx | jiffy | %% nif |

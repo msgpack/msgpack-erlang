@@ -64,7 +64,7 @@ native_test() ->
     {ok, Term} = msgpack:unpack(msgpack:pack(Term, Opt), Opt).
 
 pack_ext(T, O) -> pack_native(T, O).
-unpack_ext(I, B) -> unpack_native(I, B).
+unpack_ext(I, B, _) -> unpack_native(I, B).
 
 behaviour_test() ->
     Opt = [{ext, ?MODULE}],

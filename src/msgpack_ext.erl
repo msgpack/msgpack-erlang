@@ -26,5 +26,5 @@
     {ok, {Type::byte(), Data::binary()}} |
     {error, any()}.
 
--callback unpack_ext(Type::byte(), Data::binary()) ->
+-callback unpack_ext(Type::byte(), Data::binary(), msgpack:options()) ->
     {ok, any()} | {error, any()}.

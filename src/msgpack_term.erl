@@ -17,8 +17,8 @@
 %%
 -module(msgpack_term).
 
--export([to_binary/1, from_binary/1,
-         pack_ext/2, unpack_ext/2]).
+-export([to_binary/1, from_binary/2,
+         pack_ext/2, unpack_ext/3]).
 -behabiour(msgpack_ext).
 
 -define(ERLANG_TERM, 131).
@@ -30,9 +30,9 @@ to_binary(Term) ->
     msgpack:pack(Term, ?TERM_OPTION).
 
 %% @doc experimental
--spec from_binary(binary()) -> term().
-from_binary(Bin) ->
-    {ok, Term} = msgpack:unpack(Bin, ?TERM_OPTION),
+-spec from_binary(binary(), []|[safe]) -> term().
+from_binary(Bin, Opt) ->
+    {ok, Term} = msgpack:unpack(Bin, Opt ++ ?TERM_OPTION),
     Term.
 
 -spec pack_ext(tuple(), msgpack:options()) ->
@@ -50,10 +50,15 @@ pack_ext(Term, _Options) ->
     %% coded as single byte indicating its length.
     {ok, {?ERLANG_TERM, erlang:term_to_binary(Term)}}.
 
--spec unpack_ext(Type::byte(), Data::binary()) ->
+-spec unpack_ext(Type::byte(), Data::binary(), msgpack:options()) ->
     {ok, any()} | {error, any()}.
-unpack_ext(?ERLANG_TERM, Bin) ->
-    {ok, erlang:binary_to_term(Bin)}.
+unpack_ext(?ERLANG_TERM, Bin, Opt) ->
+    case proplists:get_value(safe, Opt) of
+        true ->
+            {ok, erlang:binary_to_term(Bin, [safe])};
+        undefined ->
+            {ok, erlang:binary_to_term(Bin)}
+    end.
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").

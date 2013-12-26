@@ -38,7 +38,7 @@
 
 -export([pack/1, unpack/1, unpack_stream/1,
          pack/2, unpack/2, unpack_stream/2,
-         term_to_binary/1, binary_to_term/1
+         term_to_binary/1, binary_to_term/1, binary_to_term/2
         ]).
 
 -include("msgpack.hrl").
@@ -54,7 +54,11 @@ term_to_binary(Term) ->
 
 -spec binary_to_term(binary()) -> term().
 binary_to_term(Bin) ->
-    msgpack_term:from_binary(Bin).
+    msgpack_term:from_binary(Bin, []).
+
+-spec binary_to_term(binary(), [safe]) -> term().
+binary_to_term(Bin, Opt) ->
+    msgpack_term:from_binary(Bin, Opt).
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
@@ -132,10 +136,11 @@ parse_options([{enable_str,Bool}|TL], Opt0) ->
     parse_options(TL, Opt);
 parse_options([{ext, Module}|TL], Opt0) when is_atom(Module) ->
     Opt = Opt0?OPTION{ext_packer=fun Module:pack_ext/2,
-                      ext_unpacker=fun Module:unpack_ext/2},
+                      ext_unpacker=fun Module:unpack_ext/3},
     parse_options(TL, Opt);
 parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) when
-      is_function(Packer, 2) andalso is_function(Unpacker, 2) ->
+      is_function(Packer, 2) andalso
+      (is_function(Unpacker, 3) orelse is_function(Unpacker, 2)) ->
     Opt = Opt0?OPTION{ext_packer=Packer, ext_unpacker=Unpacker},
     parse_options(TL, Opt).
 

@@ -22,7 +22,7 @@ xref: compile
 	@$(REBAR) xref
 
 test: compile xref
-	@./rebar skip_deps=true eunit
+	@./rebar eunit
 
 clean:
 	@$(REBAR) clean
@@ -30,20 +30,14 @@ clean:
 doc:
 	@$(REBAR) doc
 
-bench: compile
-	@$(REBAR) eunit skip_deps=true suites=bench_tests
-
-APPS = kernel stdlib sasl erts ssl tools os_mon runtime_tools crypto inets \
-	xmerl webtool snmp public_key mnesia eunit syntax_tools compiler
+APPS = kernel stdlib runtime_tools
 COMBO_PLT = $(HOME)/.msgpack_dialyzer_plt
 
 check_plt: xref
-	dialyzer --check_plt --plt $(COMBO_PLT) --apps $(APPS) \
-		deps/*/ebin
+	dialyzer --check_plt --plt $(COMBO_PLT) --apps $(APPS)
 
 build_plt: xref
-	dialyzer --build_plt --output_plt $(COMBO_PLT) --apps $(APPS) \
-		deps/*/ebin
+	dialyzer --build_plt --output_plt $(COMBO_PLT) --apps $(APPS)
 
 dialyzer: xref
 	@echo
@@ -51,8 +45,7 @@ dialyzer: xref
 	@echo Use "'make build_plt'" to build PLT prior to using this target.
 	@echo
 	@sleep 1
-	dialyzer -Wno_return --plt $(COMBO_PLT) deps/*/ebin | \
-	    fgrep -v -f ./dialyzer.ignore-warnings
+	dialyzer -Wno_return --plt $(COMBO_PLT) | fgrep -v -f ./dialyzer.ignore-warnings
 
 
 
