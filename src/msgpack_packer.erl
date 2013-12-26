@@ -50,7 +50,7 @@ pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
     pack(erlang:atom_to_binary(Atom, unicode), Opt);
 
 %% jiffy interface
-pack({Map}, Opt = ?OPTION{interface=jiffy}) ->
+pack({Map}, Opt = ?OPTION{interface=jiffy}) when is_list(Map) ->
     pack_map(Map, Opt);
 
 %% jsx interface
@@ -83,7 +83,7 @@ pack(List, Opt)  when is_list(List) ->
 
 %% Packing ext type with user defined packer function
 pack(Any, _Opt = ?OPTION{ext_packer=Packer, original_list=Orig})
-  when is_tuple(Any) andalso is_function(Packer) ->
+  when is_function(Packer) ->
 
     case pack_ext(Any, Packer, Orig) of
         {ok, Binary} -> Binary;

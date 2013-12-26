@@ -37,7 +37,9 @@
 -module(msgpack).
 
 -export([pack/1, unpack/1, unpack_stream/1,
-         pack/2, unpack/2, unpack_stream/2]).
+         pack/2, unpack/2, unpack_stream/2,
+         term_to_binary/1, binary_to_term/1
+        ]).
 
 -include("msgpack.hrl").
 
@@ -45,6 +47,14 @@
 -export_type([object/0, msgpack_map/0, options/0]).
 -type object() :: msgpack_term().
 -type options() :: msgpack_list_options().
+
+-spec term_to_binary(term()) -> binary().
+term_to_binary(Term) ->
+    msgpack_term:to_binary(Term).
+
+-spec binary_to_term(binary()) -> term().
+binary_to_term(Bin) ->
+    msgpack_term:from_binary(Bin).
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
