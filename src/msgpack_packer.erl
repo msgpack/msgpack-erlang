@@ -107,8 +107,12 @@ pack_int(N) when N > -32768 ->
 pack_int(N) when (N band 16#FFFFFFFF) =:= N ->
     << 16#D2:8, N:32/big-signed-integer-unit:1 >>;
 %% int 64
+pack_int(N) when N >= -16#8000000000000000 ->
+    << 16#D3:8, N:64/big-signed-integer-unit:1 >>;
+%% too big int
 pack_int(N) ->
-    << 16#D3:8, N:64/big-signed-integer-unit:1 >>.
+    {error, {badarg, N}}.
+
 
 -spec pack_uint(non_neg_integer()) -> binary().
 %% positive fixnum

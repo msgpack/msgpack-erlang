@@ -250,7 +250,10 @@ error_test_()->
               Term = {"hoge", "hage", atom},
               ?assertEqual({error, {badarg, Term}},
                            pack(Term))
-      end}
+      end},
+     {"badarg too big int",
+      ?_assertEqual({error, {badarg, -16#8000000000000001}},
+                     pack(-16#8000000000000001))}
     ].
 
 binary_test_() ->
