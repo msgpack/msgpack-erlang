@@ -128,8 +128,11 @@ pack_uint(N) when (N band 16#FFFF) =:= N ->
 pack_uint(N) when (N band 16#FFFFFFFF) =:= N->
     << 16#CE:8, N:32/big-unsigned-integer-unit:1 >>;
 %% uint 64
+pack_uint(N) when (N band 16#FFFFFFFFFFFFFFFF) =:= N ->
+    << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>;
+%% too big unit
 pack_uint(N) ->
-    << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>.
+    {error, {badarg, N}}.
 
 
 -spec pack_double(float()) -> binary().
