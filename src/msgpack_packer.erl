@@ -152,8 +152,10 @@ pack_raw(Bin) ->
             << 2#101:3, Len:5, Bin/binary >>;
         Len when Len < 16#10000 -> % 65536
             << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-        Len ->
-            << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+        Len when Len < 16#100000000 ->
+            << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+        _ ->
+            {error, {badarg, Bin}}
     end.
 
 -spec pack_raw2(binary()) -> binary().
@@ -164,8 +166,10 @@ pack_raw2(Bin) ->
             << 16#C4:8, Len:8/big-unsigned-integer-unit:1, Bin/binary>>;
         Len when Len < 16#10000 -> % 65536
             << 16#C5:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-        Len ->
-            << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+        Len when Len < 16#100000000 ->
+            << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+        _ ->
+            {error, {badarg, Bin}}
     end.
 
 %% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
@@ -184,8 +188,10 @@ pack_string(String, _Opt) ->
                     << 16#D9:8, Len:8/big-unsigned-integer-unit:1, Bin/binary >>;
                 Len when Len < 16#10000 -> % 65536
                     << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-                Len ->
-                    << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+                Len when Len < 16#100000000 ->
+                    << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+                _ ->
+                    {error, {badarg, String}}
             end
     end.
 
