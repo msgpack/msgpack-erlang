@@ -273,10 +273,12 @@ pack_array([A, B, C, D, E, F, G, H, I, J, K, L, M, N, O], Opt) ->
 
 pack_array(L, Opt) ->
     case length(L) of
-        Len when Len < 16#10000 -> % 65536
+        Len when Len < 16#10000 ->
             <<16#DC:8, Len:16/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>;
-        Len ->
-            <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>
+        Len when Len < 16#100000000 ->
+            <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>;
+        _ ->
+            {error, {badarg, L}}
     end.
 
 -spec pack_map(msgpack:msgpack_map(), msgpack_option()) -> binary() | no_return().
