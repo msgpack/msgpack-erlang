@@ -111,7 +111,7 @@ pack_int(N) when N >= -16#8000000000000000 ->
     << 16#D3:8, N:64/big-signed-integer-unit:1 >>;
 %% too big int
 pack_int(N) ->
-    {error, {badarg, N}}.
+    throw({badarg, N}).
 
 
 -spec pack_uint(non_neg_integer()) -> binary().
@@ -132,7 +132,7 @@ pack_uint(N) when (N band 16#FFFFFFFFFFFFFFFF) =:= N ->
     << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>;
 %% too big unit
 pack_uint(N) ->
-    {error, {badarg, N}}.
+    throw({badarg, N}).
 
 
 -spec pack_double(float()) -> binary().
@@ -155,7 +155,7 @@ pack_raw(Bin) ->
         Len when Len < 16#100000000 ->
             << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
         _ ->
-            {error, {badarg, Bin}}
+            throw({badarg, Bin})
     end.
 
 -spec pack_raw2(binary()) -> binary().
@@ -169,7 +169,7 @@ pack_raw2(Bin) ->
         Len when Len < 16#100000000 ->
             << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
         _ ->
-            {error, {badarg, Bin}}
+            throw({badarg, Bin})
     end.
 
 %% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
@@ -191,7 +191,7 @@ pack_string(String, _Opt) ->
                 Len when Len < 16#100000000 ->
                     << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
                 _ ->
-                    {error, {badarg, String}}
+                    throw({badarg, String})
             end
     end.
 
@@ -284,7 +284,7 @@ pack_array(L, Opt) ->
         Len when Len < 16#100000000 ->
             <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>;
         _ ->
-            {error, {badarg, L}}
+            throw({badarg, L})
     end.
 
 -spec pack_map(msgpack:msgpack_map(), msgpack_option()) -> binary() | no_return().
@@ -322,7 +322,7 @@ pack_map(M, Opt)->
             <<16#DF:8, Len:32/big-unsigned-integer-unit:1,
               (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>;
         _ ->
-            {error, {badarg, M}}
+            throw({badarg, M})
     end.
 
 -spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
