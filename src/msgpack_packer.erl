@@ -312,9 +312,11 @@ pack_map(M, Opt)->
         Len when Len < 16#10000 -> % 65536
             <<16#DE:8, Len:16/big-unsigned-integer-unit:1,
               (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>;
-        Len ->
+        Len when Len < 16#100000000->
             <<16#DF:8, Len:32/big-unsigned-integer-unit:1,
-              (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>
+              (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>;
+        _ ->
+            {error, {badarg, M}}
     end.
 
 -spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
