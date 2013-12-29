@@ -232,10 +232,39 @@ map_test_()->
 
 int_test_() ->
     [
-     {"",
+     {"negative fixnum",
       fun() ->
-              Term = -2147483649,
+              Term = -32,
               Binary = pack(Term),
+              ?assertEqual(1, byte_size(Binary)),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end},
+     {"int 8",
+      fun() ->
+              Term = -128,
+              Binary = pack(Term),
+              ?assertEqual(2, byte_size(Binary)),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end},
+     {"int 16",
+      fun() ->
+              Term = -16#8000,
+              Binary = pack(Term),
+              ?assertEqual(3, byte_size(Binary)),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end},
+     {"int 32",
+      fun() ->
+              Term = -16#80000000,
+              Binary = pack(Term),
+              ?assertEqual(5, byte_size(Binary)),
+              ?assertEqual({ok, Term}, unpack(Binary))
+      end},
+     {"int 64",
+      fun() ->
+              Term = -16#80000001,
+              Binary = pack(Term),
+              ?assertEqual(9, byte_size(Binary)),
               ?assertEqual({ok, Term}, unpack(Binary))
       end}
     ].
