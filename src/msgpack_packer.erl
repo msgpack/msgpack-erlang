@@ -107,8 +107,12 @@ pack_int(N) when N > -32768 ->
 pack_int(N) when (N band 16#FFFFFFFF) =:= N ->
     << 16#D2:8, N:32/big-signed-integer-unit:1 >>;
 %% int 64
+pack_int(N) when N >= -16#8000000000000000 ->
+    << 16#D3:8, N:64/big-signed-integer-unit:1 >>;
+%% too big int
 pack_int(N) ->
-    << 16#D3:8, N:64/big-signed-integer-unit:1 >>.
+    throw({badarg, N}).
+
 
 -spec pack_uint(non_neg_integer()) -> binary().
 %% positive fixnum
@@ -124,8 +128,11 @@ pack_uint(N) when (N band 16#FFFF) =:= N ->
 pack_uint(N) when (N band 16#FFFFFFFF) =:= N->
     << 16#CE:8, N:32/big-unsigned-integer-unit:1 >>;
 %% uint 64
+pack_uint(N) when (N band 16#FFFFFFFFFFFFFFFF) =:= N ->
+    << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>;
+%% too big unit
 pack_uint(N) ->
-    << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>.
+    throw({badarg, N}).
 
 
 -spec pack_double(float()) -> binary().
@@ -145,8 +152,10 @@ pack_raw(Bin) ->
             << 2#101:3, Len:5, Bin/binary >>;
         Len when Len < 16#10000 -> % 65536
             << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-        Len ->
-            << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+        Len when Len < 16#100000000 ->
+            << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+        _ ->
+            throw({badarg, Bin})
     end.
 
 -spec pack_raw2(binary()) -> binary().
@@ -157,8 +166,10 @@ pack_raw2(Bin) ->
             << 16#C4:8, Len:8/big-unsigned-integer-unit:1, Bin/binary>>;
         Len when Len < 16#10000 -> % 65536
             << 16#C5:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-        Len ->
-            << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+        Len when Len < 16#100000000 ->
+            << 16#C6:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+        _ ->
+            throw({badarg, Bin})
     end.
 
 %% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
@@ -177,8 +188,10 @@ pack_string(String, _Opt) ->
                     << 16#D9:8, Len:8/big-unsigned-integer-unit:1, Bin/binary >>;
                 Len when Len < 16#10000 -> % 65536
                     << 16#DA:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
-                Len ->
-                    << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>
+                Len when Len < 16#100000000 ->
+                    << 16#DB:8, Len:32/big-unsigned-integer-unit:1, Bin/binary >>;
+                _ ->
+                    throw({badarg, String})
             end
     end.
 
@@ -266,10 +279,12 @@ pack_array([A, B, C, D, E, F, G, H, I, J, K, L, M, N, O], Opt) ->
 
 pack_array(L, Opt) ->
     case length(L) of
-        Len when Len < 16#10000 -> % 65536
+        Len when Len < 16#10000 ->
             <<16#DC:8, Len:16/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>;
-        Len ->
-            <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>
+        Len when Len < 16#100000000 ->
+            <<16#DD:8, Len:32/big-unsigned-integer-unit:1, (<< <<(pack(E, Opt))/binary>> || E <- L >>)/binary>>;
+        _ ->
+            throw({badarg, L})
     end.
 
 -spec pack_map(msgpack:msgpack_map(), msgpack_option()) -> binary() | no_return().
@@ -303,9 +318,11 @@ pack_map(M, Opt)->
         Len when Len < 16#10000 -> % 65536
             <<16#DE:8, Len:16/big-unsigned-integer-unit:1,
               (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>;
-        Len ->
+        Len when Len < 16#100000000->
             <<16#DF:8, Len:32/big-unsigned-integer-unit:1,
-              (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>
+              (<< <<(pack(K, Opt))/binary, (pack(V, Opt))/binary>> || {K, V} <- M >>)/binary>>;
+        _ ->
+            throw({badarg, M})
     end.
 
 -spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
