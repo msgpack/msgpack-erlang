@@ -42,7 +42,7 @@
                    {ok, msgpack_term()} | {error, any()}).
 
 -type msgpack_list_options() :: [
-                                 jsx | jiffy | %% nif |
+                                 {format, jsx|jiffy} |
                                  {allow_atom, none|pack} |
                                  {enable_str, boolean()} |
                                  {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()}}

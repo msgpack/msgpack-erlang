@@ -71,7 +71,7 @@ port_receive(Port, Acc) ->
 
 port_jiffy_test()->
     Tests = test_data_jiffy(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [jiffy]), [jiffy)),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{format,jiffy}]), [{format,jiffy}])),
 
                                                 %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
                                                 %    true = port_command(Port, msgpack:pack(Tests)),
@@ -82,7 +82,7 @@ port_jiffy_test()->
 
 port_jsx_test()->
     Tests = test_data_jsx(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [jsx]), [jsx])),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{format,jsx}]), [{format,jsx}])),
 
                                                 %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
                                                 %    true = port_command(Port, msgpack:pack(Tests)),
@@ -117,13 +117,13 @@ issue_jsx_5_test() ->
                         ]
             }
            ],
-    Encoded = msgpack:pack(Term, [jsx,{enable_str,true}]),
+    Encoded = msgpack:pack(Term, [{format,jsx}, {enable_str,true}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [jsx,{enable_str,true}]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [{format,jsx}, {enable_str,true}]),
     ?assertEqual(Term, Decoded).
 
 
@@ -136,13 +136,13 @@ issue_jiffy_5_test() ->
                          ]
              }
             ]},
-    Encoded = msgpack:pack(Term, [jiffy,{enable_str,true}]),
+    Encoded = msgpack:pack(Term, [{format,jiffy}, {enable_str,true}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [jiffy,{enable_str,true}]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [{format,jiffy}, {enable_str,true}]),
     ?assertEqual(Term, Decoded).
 
 
@@ -195,38 +195,38 @@ map_test_()->
      {"jiffy length 16",
       fun() ->
               Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
-              Binary = pack(Map, [jiffy]),
-              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+              Binary = pack(Map, [{format,jiffy}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,jiffy}]))
       end},
      {"jiffy length 32",
       fun() ->
               Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
-              Binary = pack(Map, [jiffy]),
-              ?assertEqual({ok, Map}, unpack(Binary, [jiffy]))
+              Binary = pack(Map, [{format,jiffy}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,jiffy}]))
       end},
      {"jiffy empty",
       fun() ->
               EmptyMap = {[]},
-              Binary = pack(EmptyMap, [jiffy]),
-              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jiffy]))
+              Binary = pack(EmptyMap, [{format,jiffy}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,jiffy}]))
       end},
      {"jsx length 16",
       fun() ->
               Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
-              Binary = pack(Map, [jsx]),
-              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+              Binary = pack(Map, [{format,jsx}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,jsx}]))
       end},
      {"jsx length 32",
       fun() ->
               Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
-              Binary = pack(Map, [jsx]),
-              ?assertEqual({ok, Map}, unpack(Binary, [jsx]))
+              Binary = pack(Map, [{format,jsx}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,jsx}]))
       end},
      {"jsx empty",
       fun() ->
               EmptyMap = [{}],
-              Binary = pack(EmptyMap, [jsx]),
-              ?assertEqual({ok, EmptyMap}, unpack(Binary, [jsx]))
+              Binary = pack(EmptyMap, [{format,jsx}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,jsx}]))
       end}
     ].
 
