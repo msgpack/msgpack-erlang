@@ -54,8 +54,8 @@ erlang- native types like `pid()`, `ref()` contained in `tuple()`. See
 `test/msgpack_ext_example_tests.erl` for example code.
 
 ```erlang
-Packer = fun({ref, Ref}, Opt) when is_ref(Ref) -> {ok, {12, term_to_binary(Ref)}} end,
-Unpacker = fun(12, Bin) -> {ok, {ref, binary_to_term(Ref)}},
+Packer = fun({ref, Ref}, Opt) when is_reference(Ref) -> {ok, {12, term_to_binary(Ref)}} end,
+Unpacker = fun(12, Bin) -> {ok, {ref, binary_to_term(Bin)}} end,
 Ref = make_ref(),
 Opt = [{ext,{Packer,Unpacker}}],
 {ok, {ref, Ref}} = msgpack:unpack(msgpack:pack({ref, Ref}, Opt), Opt).
