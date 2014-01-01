@@ -43,6 +43,7 @@
 
 -type msgpack_list_options() :: [
                                  {format, jsx|jiffy} |
+                                 jsx | jiffy |
                                  {allow_atom, none|pack} |
                                  {enable_str, boolean()} |
                                  {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()}}
