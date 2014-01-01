@@ -125,6 +125,10 @@ parse_options([jiffy|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jiffy,
                       map_unpack_fun=msgpack_unpacker:map_unpacker(jiffy)},
     parse_options(TL, Opt);
+parse_options([{format,Type}|TL], Opt0) when Type =:= jsx; Type =:= jiffy ->
+    Opt = Opt0?OPTION{interface=Type,
+                      map_unpack_fun=msgpack_unpacker:map_unpacker(Type)},
+    parse_options(TL, Opt);
 parse_options([{allow_atom,Type}|TL], Opt0) ->
     Opt = case Type of
               none -> Opt0?OPTION{allow_atom=none};
