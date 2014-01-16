@@ -69,7 +69,10 @@ pack(Term) -> msgpack:pack(Term, []).
 pack(Term, Opts) ->
     Option = parse_options(Opts),
     try
-        msgpack_packer:pack(Term, Option)
+        case Option?OPTION.impl of
+            erlang -> msgpack_packer:pack(Term, Option);
+            nif -> msgpack_nif:pack(Term)
+        end
     catch
         throw:Exception -> {error, Exception}
     end.
@@ -105,7 +108,10 @@ unpack_stream(Bin) -> unpack_stream(Bin, []).
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
     try
-        msgpack_unpacker:unpack_stream(Bin, Opts)
+        case Opts?OPTION.impl of
+            erlang -> msgpack_unpacker:unpack_stream(Bin, Opts);
+            nif -> msgpack_nif:unpack_stream(Bin)
+        end
     catch
         throw:Exception -> {error, Exception}
     end;
@@ -116,7 +122,7 @@ unpack_stream(Other, _) -> {error, {badarg, Other}}.
 parse_options(Opt) -> parse_options(Opt, ?OPTION{original_list=Opt}).
 
 %% @private
-parse_options([], Opt) -> Opt;
+parse_options([], Opt) -> check_options(Opt);
 parse_options([jsx|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jsx,
                       map_unpack_fun=msgpack_unpacker:map_unpacker(jsx)},
@@ -146,7 +152,19 @@ parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) when
       is_function(Packer, 2) andalso
       (is_function(Unpacker, 3) orelse is_function(Unpacker, 2)) ->
     Opt = Opt0?OPTION{ext_packer=Packer, ext_unpacker=Unpacker},
-    parse_options(TL, Opt).
+    parse_options(TL, Opt);
+parse_options([{use_nif, true}|TL], Opt0) ->
+    parse_options(TL, Opt0?OPTION{impl = nif}).
+
+
+-spec check_options(msgpack_option()) -> msgpack_option().
+check_options(?OPTION{impl=nif,
+                      ext_packer=Packer, ext_unpacker=Unpacker})
+  when Packer =/= undefined orelse Unpacker =/= undefined ->
+    %% NIF and ext type can't be used at once.
+    error(nif_with_ext);
+check_options(Opt) -> Opt.
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unit tests

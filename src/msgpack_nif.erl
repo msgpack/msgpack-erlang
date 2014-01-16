@@ -8,7 +8,7 @@
 -module(msgpack_nif).
 -on_load(init/0).
 
--export([init/0, pack/1, unpack/1, unpack_stream/1]).
+-export([init/0, pack/1, unpack_stream/1]).
 
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
@@ -29,7 +29,6 @@ init()->
         end,
     erlang:load_nif(SoName, 0).
 
-
 -spec pack(msgpack:object()) -> binary() | {error, {badarg, term()}}.
 pack(_) ->
     throw(nif_not_loaded).
@@ -37,19 +36,6 @@ pack(_) ->
 -spec unpack_stream(binary()) -> {msgpack:object(), binary()} | {error, incomplete} | {error, {badarg, term()}}.
 unpack_stream(_) ->
     throw(nif_not_loaded).
-
--spec unpack(binary()) -> {ok, msgpack:object()}
-                              | {error, not_just_binary} % a term deserilized, but binary remains
-                              | {error, incomplete}      % too few binary to deserialize complete binary
-                              | {error, {badarg, term()}}.
-unpack(Data) when is_binary(Data) ->
-    case unpack_stream(Data) of
-        {error, _} = E -> E;
-        {Term, <<>>} -> {ok, Term};
-        {_, Binary} when is_binary(Binary) andalso byte_size(Binary) > 0 -> {error, not_just_binary}
-    end;
-unpack(Badarg) ->
-    {error, {badarg, Badarg}}.
 
 %% NOTE: nif is disabled until new C version is released.
 -undef(TEST).
