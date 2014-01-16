@@ -43,10 +43,11 @@
 
 -type msgpack_list_options() :: [
                                  {format, jsx|jiffy} |
-                                 jsx | jiffy |
+                                 jsx | jiffy | %% single-atom option was deprecated
                                  {allow_atom, none|pack} |
                                  {enable_str, boolean()} |
-                                 {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()}}
+                                 {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()}} |
+                                 {use_nif, boolean()}
                                 ].
 
 -record(options_v1, {

@@ -1,0 +1,3 @@
+*.o
+msgpack-*.tar.gz
+msgpack-*/
