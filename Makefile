@@ -12,8 +12,10 @@ make: all
 
 console: compile
 	@erl -pa ebin
+
 deps:
 	@$(REBAR) update-deps get-deps
+	-wget https://github.com/msgpack/msgpack-c/releases/download/cpp-0.5.8/msgpack-0.5.8.tar.gz -P c_src
 
 compile:
 	@$(REBAR) compile
