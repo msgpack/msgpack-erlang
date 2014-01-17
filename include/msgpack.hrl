@@ -63,8 +63,8 @@
           impl = erlang      :: erlang | nif,
           allow_atom = none  :: none | pack, %% allows atom when packing
           enable_str = false :: boolean(), %% true for new spec
-          ext_packer = undefined   :: msgpack_ext_packer(),
-          ext_unpacker = undefined :: msgpack_ext_unpacker(),
+          ext_packer = undefined   :: msgpack_ext_packer()   | undefined,
+          ext_unpacker = undefined :: msgpack_ext_unpacker() | undefined,
           original_list = []       :: msgpack_list_options()
          }).
 
