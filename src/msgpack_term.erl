@@ -19,7 +19,7 @@
 
 -export([to_binary/1, from_binary/2,
          pack_ext/2, unpack_ext/3]).
--behabiour(msgpack_ext).
+-behaviour(msgpack_ext).
 
 -define(ERLANG_TERM, 131).
 -define(TERM_OPTION, [{enable_str,true},{ext,?MODULE},{allow_atom,none}]).
@@ -32,8 +32,10 @@ to_binary(Term) ->
 %% @doc experimental
 -spec from_binary(binary(), []|[safe]) -> term().
 from_binary(Bin, Opt) ->
-    {ok, Term} = msgpack:unpack(Bin, Opt ++ ?TERM_OPTION),
-    Term.
+    case msgpack:unpack(Bin, Opt ++ ?TERM_OPTION) of
+        {ok, Term} -> Term;
+        Error -> error(Error)
+    end.
 
 -spec pack_ext(tuple(), msgpack:options()) ->
                       {ok, {Type::byte(), Data::binary()}} |

@@ -45,7 +45,7 @@ dialyzer: xref
 	@echo Use "'make build_plt'" to build PLT prior to using this target.
 	@echo
 	@sleep 1
-	dialyzer -Wno_return --plt $(COMBO_PLT) | fgrep -v -f ./dialyzer.ignore-warnings
+	dialyzer -Wno_return --plt $(COMBO_PLT) ebin | fgrep -v -f ./dialyzer.ignore-warnings
 
 
 

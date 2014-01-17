@@ -99,7 +99,7 @@ unpack(Bin, Opts) ->
                                      | {error, {badarg, term()}}.
 unpack_stream(Bin) -> unpack_stream(Bin, []).
 
--spec unpack_stream(binary(), msgpack_option())->  {msgpack:object(), binary()}
+-spec unpack_stream(binary(), msgpack:options())->  {msgpack:object(), binary()}
                                                        | {error, incomplete}
                                                        | {error, {badarg, term()}}.
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
@@ -116,6 +116,7 @@ unpack_stream(Other, _) -> {error, {badarg, Other}}.
 parse_options(Opt) -> parse_options(Opt, ?OPTION{original_list=Opt}).
 
 %% @private
+-spec parse_options(msgpack:options(), msgpack_option()) -> msgpack_option().
 parse_options([], Opt) -> Opt;
 parse_options([jsx|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jsx,
