@@ -46,6 +46,21 @@ Opt = [{enable_str, true}]
 There are several options for `msgpack:pack/2` and `msgpack:unpack/2` .
 See `msgpack:options()` in `msgpack.hrl`.
 
+## Map Style
+
+Since Erlang/OTP 17.0
+
+```erlang
+msgpack:pack(#{ <<"key">> => <<"value">> }, [{format, map}]).
+```
+
+Or use old jiffy/jsx style
+
+```erlang
+msgpack:pack({[{<<"key">>, <<"value">>}]}, [{format, jiffy}]),
+msgpack:pack([{<<"key">>, <<"value">>}], [{format, jsx}]).
+```
+
 ## Ext type
 
 Now msgpack-erlang supports ext type. Now you can serialize everything

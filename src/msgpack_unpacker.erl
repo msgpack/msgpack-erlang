@@ -23,7 +23,7 @@
 -include("msgpack.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
--export([unpack_map_jiffy/4, unpack_map_jsx/4]).
+-export([unpack_map/3, unpack_map_jiffy/3, unpack_map_jsx/3]).
 
 %% unpack them all
 -spec unpack_stream(Bin::binary(), msgpack_option()) -> {msgpack:object(), binary()} | no_return().
@@ -94,14 +94,14 @@ unpack_stream(<<16#DD, L:32/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
 %% Maps
 unpack_stream(<<2#1000:4, L:4, Rest/binary>>, Opt) ->
     Unpacker = Opt?OPTION.map_unpack_fun,
-    Unpacker(Rest, L, [], Opt);
+    Unpacker(Rest, L, Opt);
 unpack_stream(<<16#DE, L:16/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     Unpacker = Opt?OPTION.map_unpack_fun,
-    Unpacker(Rest, L, [], Opt);
+    Unpacker(Rest, L, Opt);
 
 unpack_stream(<<16#DF, L:32/big-unsigned-integer-unit:1, Rest/binary>>, Opt) ->
     Unpacker = Opt?OPTION.map_unpack_fun,
-    Unpacker(Rest, L, [], Opt);
+    Unpacker(Rest, L, Opt);
 
 %% Tag-encoded lengths (kept last, for speed)
 %% positive int
@@ -166,34 +166,50 @@ unpack_array(Bin, Len, Acc, Opt) ->
     {Term, Rest} = unpack_stream(Bin, Opt),
     unpack_array(Rest, Len-1, [Term|Acc], Opt).
 
+map_unpacker(map) ->
+    fun ?MODULE:unpack_map/3;
 map_unpacker(jiffy) ->
-    fun ?MODULE:unpack_map_jiffy/4;
+    fun ?MODULE:unpack_map_jiffy/3;
 map_unpacker(jsx) ->
-    fun ?MODULE:unpack_map_jsx/4.
+    fun ?MODULE:unpack_map_jsx/3.
 
+
+-spec unpack_map(binary(), non_neg_integer(), msgpack_option()) ->
+                        {map(), binary()} | no_return().
+unpack_map(Bin, Len, Opt) ->
+    {Map, Rest} = unpack_map_as_proplist(Bin, Len, [], Opt),
+    {maps:from_list(Map), Rest}.
+%%     unpack_map(Bin, Len, #{}, Opt).
+
+%% unpack_map(Bin, Len, Acc, _) -> {Acc, Bin};
+%% unpack_map(Bin, Len, Acc, Opt) ->
+%%     {Key, Rest} = unpack_stream(Bin, Opt),
+%%     {Value, Rest2} = unpack_stream(Rest, Opt),
+%%     unpack_map(Rest2, Len-1, maps:put(Key, Value, Acc), Opt).
 
 %% Users SHOULD NOT send too long list: this uses lists:reverse/1
--spec unpack_map_jiffy(binary(), non_neg_integer(),
-                       msgpack:msgpack_map(), msgpack_option()) ->
-                              {msgpack:msgpack_map(), binary()} | no_return().
-unpack_map_jiffy(Bin, 0,   Acc, _) ->
-    {{lists:reverse(Acc)}, Bin};
-unpack_map_jiffy(Bin, Len, Acc, Opt) ->
-    {Key, Rest} = unpack_stream(Bin, Opt),
-    {Value, Rest2} = unpack_stream(Rest, Opt),
-    unpack_map_jiffy(Rest2, Len-1, [{Key,Value}|Acc], Opt).
+-spec unpack_map_jiffy(binary(), non_neg_integer(), msgpack_option()) ->
+                              {msgpack:msgpack_map_jiffy(), binary()} | no_return().
+unpack_map_jiffy(Bin, Len, Opt) ->
+    {Map, Rest} = unpack_map_as_proplist(Bin, Len, [], Opt),
+    {{Map}, Rest}.
 
--spec unpack_map_jsx(binary(), non_neg_integer(),
-                     msgpack:msgpack_map(), msgpack_option()) ->
-                            {msgpack:msgpack_map(), binary()} | no_return().
-unpack_map_jsx(Bin, 0, [], _) ->
-    {[{}], Bin};
-unpack_map_jsx(Bin, 0,   Acc, _) ->
+-spec unpack_map_jsx(binary(), non_neg_integer(), msgpack_option()) ->
+                            {msgpack:msgpack_map_jsx(), binary()} | no_return().
+unpack_map_jsx(Bin, Len, Opt) ->
+    case unpack_map_as_proplist(Bin, Len, [], Opt) of
+        {[], Rest} -> {[{}], Rest};
+        {Map, Rest} -> {Map, Rest}
+    end.
+
+-spec unpack_map_as_proplist(binary(), non_neg_integer(), proplists:proplist(), msgpack_option()) ->
+                                    {proplists:proplist(), binary()} | no_return().
+unpack_map_as_proplist(Bin, 0, Acc, _) ->
     {lists:reverse(Acc), Bin};
-unpack_map_jsx(Bin, Len, Acc, Opt) ->
+unpack_map_as_proplist(Bin, Len, Acc, Opt) ->
     {Key, Rest} = unpack_stream(Bin, Opt),
     {Value, Rest2} = unpack_stream(Rest, Opt),
-    unpack_map_jsx(Rest2, Len-1, [{Key,Value}|Acc], Opt).
+    unpack_map_as_proplist(Rest2, Len-1, [{Key,Value}|Acc], Opt).
 
 unpack_string_or_raw(V, ?OPTION{enable_str=true} = _Opt, Rest) ->
     {unpack_string(V), Rest};

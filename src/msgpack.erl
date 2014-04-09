@@ -31,6 +31,8 @@
 %%     <tr><td> binary()     </td><td> fix_raw/raw16/raw32                                                     </td></tr>
 %%     <tr><td> list()       </td><td> fix_array/array16/array32                                               </td></tr>
 %%     <tr><td> {proplist()} </td><td> fix_map/map16/map32                                                     </td></tr>
+%%     <tr><td> [{term(),term{}]|[{}] </td><td> fix_map/map16/map32                                                     </td></tr>
+%%     <tr><td> map()        </td><td> fix_map/map16/map32                                                     </td></tr>
 %%   </table>
 %% @end
 
@@ -113,11 +115,14 @@ unpack_stream(Other, _) -> {error, {badarg, Other}}.
 
 %% @private
 -spec parse_options(msgpack:options()) -> msgpack_option().
-parse_options(Opt) -> parse_options(Opt, ?OPTION{original_list=Opt}).
+
+parse_options(Opt) ->
+    parse_options(Opt, ?OPTION{original_list=Opt}).
 
 %% @private
 -spec parse_options(msgpack:options(), msgpack_option()) -> msgpack_option().
 parse_options([], Opt) -> Opt;
+
 parse_options([jsx|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jsx,
                       map_unpack_fun=msgpack_unpacker:map_unpacker(jsx)},
@@ -126,19 +131,23 @@ parse_options([jiffy|TL], Opt0) ->
     Opt = Opt0?OPTION{interface=jiffy,
                       map_unpack_fun=msgpack_unpacker:map_unpacker(jiffy)},
     parse_options(TL, Opt);
-parse_options([{format,Type}|TL], Opt0) when Type =:= jsx; Type =:= jiffy ->
+parse_options([{format,Type}|TL], Opt0)
+  when Type =:= jsx; Type =:= jiffy; Type =:= map->
     Opt = Opt0?OPTION{interface=Type,
                       map_unpack_fun=msgpack_unpacker:map_unpacker(Type)},
     parse_options(TL, Opt);
+
 parse_options([{allow_atom,Type}|TL], Opt0) ->
     Opt = case Type of
               none -> Opt0?OPTION{allow_atom=none};
               pack -> Opt0?OPTION{allow_atom=pack}
           end,
     parse_options(TL, Opt);
+
 parse_options([{enable_str,Bool}|TL], Opt0) ->
     Opt = Opt0?OPTION{enable_str=Bool},
     parse_options(TL, Opt);
+
 parse_options([{ext, Module}|TL], Opt0) when is_atom(Module) ->
     Opt = Opt0?OPTION{ext_packer=fun Module:pack_ext/2,
                       ext_unpacker=fun Module:unpack_ext/3},
@@ -148,6 +157,7 @@ parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) when
       (is_function(Unpacker, 3) orelse is_function(Unpacker, 2)) ->
     Opt = Opt0?OPTION{ext_packer=Packer, ext_unpacker=Unpacker},
     parse_options(TL, Opt).
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %% unit tests

@@ -41,6 +41,8 @@ pack(true, _) ->
 
 pack(Bin, Opt) when is_binary(Bin) ->
     case Opt of
+        #options_v3{enable_str=true} = Opt -> pack_raw2(Bin);
+        #options_v3{enable_str=false} = Opt -> pack_raw(Bin);
         #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
         #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
         #options_v1{} = Opt -> pack_raw(Bin)
@@ -48,6 +50,10 @@ pack(Bin, Opt) when is_binary(Bin) ->
 
 pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
     pack(erlang:atom_to_binary(Atom, unicode), Opt);
+
+%% map interface
+pack(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
+    pack_map(maps:to_list(Map), Opt);
 
 %% jiffy interface
 pack({Map}, Opt = ?OPTION{interface=jiffy}) when is_list(Map) ->
@@ -59,7 +65,7 @@ pack(Map, Opt = ?OPTION{interface=jsx}) when Map =:= [{}]->
 pack([{_,_}|_] = Map, Opt = ?OPTION{interface=jsx}) ->
     pack_map(Map, Opt);
 
-pack(List, #options_v2{enable_str=true}=Opt)  when is_list(List) ->
+pack(List, ?OPTION{enable_str=true}=Opt)  when is_list(List) ->
     try
         case lists:all(fun is_integer/1, List) of
             true ->

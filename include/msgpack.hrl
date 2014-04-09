@@ -21,7 +21,8 @@
 
 -type msgpack_map_jiffy() :: {[{msgpack_term(), msgpack_term()}]}.
 
--type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy().
+-type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy()
+                     | map().
 
 -type msgpack_map_unpacker() ::
         fun((binary(), non_neg_integer(), msgpack_map(), msgpack_option()) ->
@@ -41,8 +42,10 @@
       | fun((byte(), binary()) ->
                    {ok, msgpack_term()} | {error, any()}).
 
+-type format_type() :: jsx|jiffy|map.
+
 -type msgpack_list_options() :: [
-                                 {format, jsx|jiffy} |
+                                 {format, format_type()} |
                                  jsx | jiffy |
                                  {allow_atom, none|pack} |
                                  {enable_str, boolean()} |
@@ -51,14 +54,14 @@
 
 -record(options_v1, {
           interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 ::
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
                                  msgpack_map_unpacker(),
           impl = erlang     :: erlang | nif
          }).
 
 -record(options_v2, {
           interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/4 ::
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
                                  msgpack_map_unpacker(),
           impl = erlang      :: erlang | nif,
           allow_atom = none  :: none | pack, %% allows atom when packing
@@ -68,5 +71,17 @@
           original_list = []       :: msgpack_list_options()
          }).
 
--define(OPTION, #options_v2).
--type msgpack_option() :: #options_v2{}.
+-record(options_v3, {
+          interface = map :: format_type(),
+          map_unpack_fun = fun msgpack_unpacker:unpack_map/3 ::
+                                 msgpack_map_unpacker(),
+          impl = erlang      :: erlang | nif,
+          allow_atom = none  :: none | pack, %% allows atom when packing
+          enable_str = false :: boolean(), %% true for new spec
+          ext_packer = undefined   :: msgpack_ext_packer()   | undefined,
+          ext_unpacker = undefined :: msgpack_ext_unpacker() | undefined,
+          original_list = []       :: msgpack_list_options()
+         }).
+
+-define(OPTION, #options_v3).
+-type msgpack_option() :: #options_v3{}.
