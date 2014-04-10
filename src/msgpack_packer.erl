@@ -125,8 +125,7 @@ handle_ext(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
     pack_map(maps:to_list(Map), Opt);
 
 handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,
-                         original_list=Orig,
-                         interface=Interface})
+                               original_list=Orig})
   when is_function(Packer) ->
 
     case pack_ext(Any, Packer, Orig) of
