@@ -40,20 +40,16 @@ pack(true, _) ->
     << 16#C3:8 >>;
 
 pack(Bin, Opt) when is_binary(Bin) ->
-    case Opt of
-        #options_v3{enable_str=true} = Opt -> pack_raw2(Bin);
-        #options_v3{enable_str=false} = Opt -> pack_raw(Bin);
-        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
-        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
-        #options_v1{} = Opt -> pack_raw(Bin)
-    end;
+    handle_binary(Bin, Opt);
 
 pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
     pack(erlang:atom_to_binary(Atom, unicode), Opt);
 
-%% map interface
-pack(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
-    pack_map(maps:to_list(Map), Opt);
+%% -ifndef(without_map).
+%% %% map interface
+%% pack(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
+%%     pack_map(maps:to_list(Map), Opt);
+%% -endif.
 
 %% jiffy interface
 pack({Map}, Opt = ?OPTION{interface=jiffy}) when is_list(Map) ->
@@ -87,8 +83,50 @@ pack(List, ?OPTION{enable_str=true}=Opt)  when is_list(List) ->
 pack(List, Opt)  when is_list(List) ->
     pack_array(List, Opt);
 
+pack(Other, Opt) ->
+    handle_ext(Other, Opt).
+
+-ifdef(without_map).
+
+handle_binary(Bin, Opt) ->
+    case Opt of
+        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
+        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
+        #options_v1{} = Opt -> pack_raw(Bin)
+    end.
+
 %% Packing ext type with user defined packer function
-pack(Any, _Opt = ?OPTION{ext_packer=Packer, original_list=Orig})
+handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,
+                         original_list=Orig,
+                         interface=Interface})
+  when is_function(Packer) andalso Interface =/= map ->
+
+    case pack_ext(Any, Packer, Orig) of
+        {ok, Binary} -> Binary;
+        {error, E} -> throw({error, E})
+    end;
+
+handle_ext(Other, _) ->
+    throw({badarg, Other}).
+
+-else.
+
+handle_binary(Bin, Opt) ->
+    case Opt of
+        #options_v3{enable_str=true} = Opt -> pack_raw2(Bin);
+        #options_v3{enable_str=false} = Opt -> pack_raw(Bin);
+        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
+        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
+        #options_v1{} = Opt -> pack_raw(Bin)
+    end.
+
+%% %% map interface
+handle_ext(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
+    pack_map(maps:to_list(Map), Opt);
+
+handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,
+                         original_list=Orig,
+                         interface=Interface})
   when is_function(Packer) ->
 
     case pack_ext(Any, Packer, Orig) of
@@ -96,8 +134,10 @@ pack(Any, _Opt = ?OPTION{ext_packer=Packer, original_list=Orig})
         {error, E} -> throw({error, E})
     end;
 
-pack(Other, _) ->
+handle_ext(Other, _) ->
     throw({badarg, Other}).
+
+-endif.
 
 -spec pack_int(integer()) -> binary().
 %% negative fixnum

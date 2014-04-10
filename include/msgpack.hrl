@@ -21,8 +21,11 @@
 
 -type msgpack_map_jiffy() :: {[{msgpack_term(), msgpack_term()}]}.
 
--type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy()
-                     | map().
+-ifdef(without_map).
+-type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy().
+-else.
+-type msgpack_map() :: msgpack_map_jsx() | msgpack_map_jiffy() | map().
+-endif.
 
 -type msgpack_map_unpacker() ::
         fun((binary(), non_neg_integer(), msgpack_map(), msgpack_option()) ->
@@ -71,6 +74,12 @@
           original_list = []       :: msgpack_list_options()
          }).
 
+-ifdef(without_map).
+
+-define(OPTION, #options_v2).
+-type msgpack_option() :: #options_v2{}.
+
+-else.
 -record(options_v3, {
           interface = map :: format_type(),
           map_unpack_fun = fun msgpack_unpacker:unpack_map/3 ::
@@ -85,3 +94,6 @@
 
 -define(OPTION, #options_v3).
 -type msgpack_option() :: #options_v3{}.
+
+-endif.
+
