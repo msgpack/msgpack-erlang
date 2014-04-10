@@ -148,7 +148,7 @@ issue_27_test_() ->
     [?_assertEqual({ok, null},
                    msgpack:unpack(msgpack:pack(nil), [{format,jsx}])),
      ?_assertEqual({ok, nil},
-                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]))),
+                   msgpack:unpack(msgpack:pack(nil, [{format,jiffy}]))),
      ?_assertEqual({ok, <<"null">>},
                    msgpack:unpack(msgpack:pack(null, [{allow_atom,pack}]))),
      ?_assertEqual({ok, <<"nil">>},
@@ -199,9 +199,41 @@ array_test_()->
       end}
     ].
 
+-ifndef(without_map).
 map_test_()->
     [
-     {"jiffy length 16",
+     {"maps <=> jsx",
+      fun() ->
+              JSXMap = [ {X, X * 2} || X <- lists:seq(0, 16) ],
+              BinaryJSX = pack(JSXMap, [{format,jsx}]),
+              Map = maps:from_list(JSXMap),
+              Binary = pack(Map, [{format,map}]),
+              ?assertEqual(BinaryJSX, Binary)
+      end},
+
+     {"map length 16",
+      fun() ->
+              Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16) ]),
+              Binary = pack(Map, [{format,map}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,map}]))
+      end},
+     {"map length 32",
+      fun() ->
+              Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16#010000) ]),
+              Binary = pack(Map, [{format,map}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{format,map}]))
+      end},
+     {"map empty",
+      fun() ->
+              EmptyMap = maps:new(),
+              Binary = pack(EmptyMap, [{format,map}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,map}]))
+      end}].
+-endif.
+
+
+jiffy_jsx_test_() ->
+    [{"jiffy length 16",
       fun() ->
               Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
               Binary = pack(Map, [{format,jiffy}]),

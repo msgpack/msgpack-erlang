@@ -85,6 +85,8 @@ pack(Other, Opt) ->
 
 -ifdef(without_map).
 
+%% TODO: maybe we don't need this inside ifdef
+%%       as to use ?OPTION{enable_str=boolean()}
 handle_binary(Bin, Opt) ->
     case Opt of
         #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
