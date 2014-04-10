@@ -146,6 +146,17 @@ issue_jiffy_5_test() ->
     ?assertEqual(Term, Decoded).
 
 
+issue_27_test_() ->
+    [?_assertEqual({ok, null},
+                   msgpack:unpack(msgpack:pack(nil), [{format,jsx}])),
+     ?_assertEqual({ok, nil},
+                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]))),
+     ?_assertEqual({ok, <<"null">>},
+                   msgpack:unpack(msgpack:pack(null, [{allow_atom,pack}]))),
+     ?_assertEqual({ok, <<"nil">>},
+                   msgpack:unpack(msgpack:pack(nil,
+                                               [{format,jsx},{allow_atom,pack}])))].
+
 string_test() ->
     {ok, CWD} = file:get_cwd(),
     Path = CWD ++ "/../test/utf8.txt",

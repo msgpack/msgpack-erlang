@@ -173,7 +173,7 @@ enable_str_test() ->
     ?assertEqual(<<167:8, (<<"saitama">>)/binary >>,
                  msgpack:pack(<<"saitama">>, [{enable_str, false}])),
     ?assertEqual(<<196,7,115,97,105,116,97,109,97>>,
-                 msgpack:pack(<<"saitama">>, [{enable_str, true}])). 
+                 msgpack:pack(<<"saitama">>, [{enable_str, true}])).
 
 basic_test()->
     Tests = test_data(),

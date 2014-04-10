@@ -28,6 +28,8 @@
 %% unpack them all
 -spec unpack_stream(Bin::binary(), msgpack_option()) -> {msgpack:object(), binary()} | no_return().
 %% ATOMS
+unpack_stream(<<16#C0, Rest/binary>>, _Opt = ?OPTION{interface=jsx}) ->
+    {null, Rest};
 unpack_stream(<<16#C0, Rest/binary>>, _) ->
     {nil, Rest};
 unpack_stream(<<16#C2, Rest/binary>>, _) ->

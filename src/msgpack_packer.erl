@@ -32,7 +32,10 @@ pack(I, _) when is_integer(I) ->
     pack_uint(I);
 pack(F, _) when is_float(F) ->
     pack_double(F);
-pack(nil, _) ->
+pack(null, _Opt = ?OPTION{interface=jsx}) ->
+    << 16#C0:8 >>;
+pack(nil, _Opt = ?OPTION{interface=Interface}) 
+  when Interface =/= jsx ->
     << 16#C0:8 >>;
 pack(false, _) ->
     << 16#C2:8 >>;
