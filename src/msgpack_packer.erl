@@ -48,12 +48,6 @@ pack(Bin, Opt) when is_binary(Bin) ->
 pack(Atom, #options_v2{allow_atom=pack} = Opt) when is_atom(Atom) ->
     pack(erlang:atom_to_binary(Atom, unicode), Opt);
 
-%% -ifndef(without_map).
-%% %% map interface
-%% pack(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
-%%     pack_map(maps:to_list(Map), Opt);
-%% -endif.
-
 %% jiffy interface
 pack({Map}, Opt = ?OPTION{interface=jiffy}) when is_list(Map) ->
     pack_map(Map, Opt);

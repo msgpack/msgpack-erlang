@@ -28,7 +28,7 @@
 -endif.
 
 -type msgpack_map_unpacker() ::
-        fun((binary(), non_neg_integer(), msgpack_map(), msgpack_option()) ->
+        fun((binary(), non_neg_integer(), msgpack_option()) ->
                    {msgpack_map(), binary()} | no_return() ).
 
 %% Erlang representation of msgpack data.
