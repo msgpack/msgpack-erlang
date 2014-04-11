@@ -96,3 +96,18 @@ See [msgpack-erlang-tests](http://github.com/kuenishi/msgpack-erlang-tests) for 
 ## License
 
 Apache License 2.0
+
+# Release Notes
+
+## 0.3.0
+
+- supports map new in 17.0
+- jiffy-style maps will be deprecated in near future
+
+## 0.2.8
+
+0.2 series works with OTP 17.0, R16, R15, and with MessagePack's new
+and old format. But does not support `map` type introduced in
+OTP 17.0.
+
+It also supports JSX-compatible mode.
