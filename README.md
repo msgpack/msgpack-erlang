@@ -99,10 +99,16 @@ Apache License 2.0
 
 # Release Notes
 
+## 0.3.1
+
+- set back default style as jiffy
+- fix bugs around nil/null handling
+
 ## 0.3.0
 
 - supports map new in 17.0
 - jiffy-style maps will be deprecated in near future
+- set default style as map
 
 ## 0.2.8
 
