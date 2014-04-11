@@ -145,12 +145,25 @@ issue_jiffy_5_test() ->
 
 
 issue_27_test_() ->
-    [?_assertEqual({ok, null},
+    [
+     %% nil(jiffy) => nil(msgpack) => null(jsx)
+     ?_assertEqual({ok, null},
                    msgpack:unpack(msgpack:pack(nil), [{format,jsx}])),
+
+     %% nil(jiffy) => nil(msgpack) => nil(jiffy)
      ?_assertEqual({ok, nil},
                    msgpack:unpack(msgpack:pack(nil, [{format,jiffy}]))),
+
+
+     %% null(jsx) => nil(msgpack) => nil(jiffy)
+     ?_assertEqual({ok, nil},
+                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]))),
+
+     %% null(jiffy-atom) => <<null>>(msgpack-binary) => <<"nil">>
      ?_assertEqual({ok, <<"null">>},
                    msgpack:unpack(msgpack:pack(null, [{allow_atom,pack}]))),
+
+     %% nil(jsx-atom) => <<nil>>(msgpack-binary) => <<"nil">>
      ?_assertEqual({ok, <<"nil">>},
                    msgpack:unpack(msgpack:pack(nil,
                                                [{format,jsx},{allow_atom,pack}])))].

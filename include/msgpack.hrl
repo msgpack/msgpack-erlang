@@ -81,7 +81,7 @@
 
 -else.
 -record(options_v3, {
-          interface = map :: format_type(),
+          interface = jiffy :: format_type(),
           map_unpack_fun = fun msgpack_unpacker:unpack_map/3 ::
                                  msgpack_map_unpacker(),
           impl = erlang      :: erlang | nif,
