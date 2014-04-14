@@ -99,7 +99,7 @@ Apache License 2.0
 
 # Release Notes
 
-## 0.3.1
+## 0.3.2
 
 - set back default style as jiffy
 - fix bugs around nil/null handling
