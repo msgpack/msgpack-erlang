@@ -176,7 +176,20 @@ string_test() ->
     MsgpackStringBin = msgpack:pack(String),
     {ok, String} = msgpack:unpack(MsgpackStringBin).
 
-
+default_test_() ->
+    [
+     {"pack",
+      fun() ->
+              Map = {[{1,2}]},
+              ?assertEqual(pack(Map, [{format, jiffy}]), pack(Map))
+      end},
+     {"unpack",
+      fun() ->
+              Map = {[{1,2}]},
+              Binary = pack(Map, [{format, jiffy}]),
+              ?assertEqual(unpack(Binary, [{format, jiffy}]), unpack(Binary))
+      end}
+    ].
 
 unpack_test_() ->
     [

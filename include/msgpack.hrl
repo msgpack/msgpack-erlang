@@ -82,7 +82,7 @@
 -else.
 -record(options_v3, {
           interface = jiffy :: format_type(),
-          map_unpack_fun = fun msgpack_unpacker:unpack_map/3 ::
+          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
                                  msgpack_map_unpacker(),
           impl = erlang      :: erlang | nif,
           allow_atom = none  :: none | pack, %% allows atom when packing
