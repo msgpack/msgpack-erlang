@@ -146,22 +146,22 @@ issue_jiffy_5_test() ->
 
 issue_27_test_() ->
     [
-     %% nil(jiffy) => nil(msgpack) => null(jsx)
+     %% null(jiffy) => nil(msgpack) => null(jsx)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(nil), [{format,jsx}])),
+                   msgpack:unpack(msgpack:pack(null), [{format,jsx}])),
 
-     %% nil(jiffy) => nil(msgpack) => nil(jiffy)
-     ?_assertEqual({ok, nil},
-                   msgpack:unpack(msgpack:pack(nil, [{format,jiffy}]))),
+     %% null(jiffy) => nil(msgpack) => null(jiffy)
+     ?_assertEqual({ok, null},
+                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]))),
 
 
-     %% null(jsx) => nil(msgpack) => nil(jiffy)
-     ?_assertEqual({ok, nil},
+     %% null(jsx) => nil(msgpack) => null(jiffy)
+     ?_assertEqual({ok, null},
                    msgpack:unpack(msgpack:pack(null, [{format,jsx}]))),
 
-     %% null(jiffy-atom) => <<null>>(msgpack-binary) => <<"nil">>
-     ?_assertEqual({ok, <<"null">>},
-                   msgpack:unpack(msgpack:pack(null, [{allow_atom,pack}]))),
+     %% nil(jiffy-atom) => <<nil>>(msgpack-binary) => <<"nil">>
+     ?_assertEqual({ok, <<"nil">>},
+                   msgpack:unpack(msgpack:pack(nil, [{allow_atom,pack}]))),
 
      %% nil(jsx-atom) => <<nil>>(msgpack-binary) => <<"nil">>
      ?_assertEqual({ok, <<"nil">>},
