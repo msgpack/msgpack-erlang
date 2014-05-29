@@ -35,6 +35,8 @@
 %% ATOMS
 unpack_stream(<<16#C0, Rest/binary>>, _Opt = ?OPTION{interface=jsx}) ->
     {null, Rest};
+unpack_stream(<<16#C0, Rest/binary>>, _Opt = ?OPTION{interface=jiffy}) ->
+    {null, Rest};
 unpack_stream(<<16#C0, Rest/binary>>, _) ->
     {nil, Rest};
 unpack_stream(<<16#C2, Rest/binary>>, _) ->

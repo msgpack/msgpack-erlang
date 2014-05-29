@@ -34,8 +34,10 @@ pack(F, _) when is_float(F) ->
     pack_double(F);
 pack(null, _Opt = ?OPTION{interface=jsx}) ->
     << 16#C0:8 >>;
+pack(null, _Opt = ?OPTION{interface=jiffy}) ->
+    << 16#C0:8 >>;
 pack(nil, _Opt = ?OPTION{interface=Interface}) 
-  when Interface =/= jsx ->
+  when Interface =/= jsx andalso Interface =/= jiffy ->
     << 16#C0:8 >>;
 pack(false, _) ->
     << 16#C2:8 >>;
