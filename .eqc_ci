@@ -1,0 +1,2 @@
+{build, "./rebar eunit"}.
+{test_path, ".eunit"}.
