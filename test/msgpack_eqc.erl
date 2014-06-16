@@ -19,23 +19,97 @@
 -module(msgpack_eqc).
 
 
+-ifdef(TEST).
 -ifdef(EQC).
 
+-compile(export_all).
 -include_lib("eqc/include/eqc.hrl").
 -include_lib("eunit/include/eunit.hrl").
 
-eqc_test_() ->
-    {spawn,
-     [
-      ?_assert(quickcheck(numtests(10, prop_msgpack())))
-     ]}.
+-define(NUMTESTS, 16).
+-define(QC_OUT(P),
+        eqc:on_output(fun(Str, Args) ->
+                              io:format(user, Str, Args) end, P)).
+-define(_assertProp(S),
+        {timeout, ?NUMTESTS * 10,
+         ?_assert(quickcheck(numtests(?NUMTESTS, ?QC_OUT(S))))}).
 
+eqc_test_() ->
+    {inparallel,
+     [
+      ?_assertProp(prop_msgpack()),
+      ?_assertProp(prop_msgpack([{format, jiffy}])),
+      ?_assertProp(prop_msgpack([{format, jsx}]))
+      ]}.
+
+-ifndef(without_map).
+%% eqc_17_0_test_() ->
+%%     ?_assertProp(prop_msgpack([{format, map}])).
+-endif.
 
 prop_msgpack() ->
-    ?FORALL(Int, int(),
+    ?FORALL(Obj, msgpack_object(),
             begin
-                ?debugVal(Int),
-                Int =:= Int
+                {ok, Obj} =:= msgpack:unpack(msgpack:pack(Obj))
             end).
 
+prop_msgpack(Options) ->
+    ?FORALL(Obj, msgpack_object(),
+            begin
+                {ok, Obj} =:= msgpack:unpack(msgpack:pack(Obj, Options), Options)
+            end).
+
+msgpack_object() ->
+    oneof(container_types() ++ primitive_types()).
+
+container_types() ->
+    [ fix_array(), array16() ].
+%% TODO: add map
+
+primitive_types() ->
+    [null(),
+     positive_fixnum(), negative_fixnum(),
+     int8(), int16(), int32(), int64(),
+     uint8(), uint16(), uint32(), uint64(),
+     eqc_gen:real(), eqc_gen:bool(),
+     fix_raw(), raw16(), raw32()
+    ].
+          %% fix_raw(), raw16(), raw32()]).
+
+positive_fixnum() -> choose(0, 127).
+negative_fixnum() -> choose(-32, -1).
+
+int8() ->  choose(-16#80, 16#7F).
+int16() -> oneof([choose(-16#8000, -16#81),
+                  choose(16#80, 16#7FFF)]).
+int32() -> oneof([choose(-16#80000000, -16#8001),
+                  choose(16#10000, 16#7FFFFFFF)]).
+int64() -> oneof([choose(-16#8000000000000000, -16#80000001),
+                  choose(16#100000000, 16#7FFFFFFFFFFFFFFF)]).
+
+uint8() ->  choose(0, 16#FF).
+uint16() -> choose(16#100, 16#FFFF).
+uint32() -> choose(16#10000, 16#FFFFFFFF).
+uint64() -> choose(16#100000000, 16#FFFFFFFFFFFFFFFF).
+
+null() -> null.
+
+fix_raw() ->
+    ?LET(Integer, choose(0, 31),
+         ?LET(Binary, binary(Integer), Binary)).
+
+raw16() ->
+    ?LET(Integer, uint16(),
+         ?LET(Binary, binary(Integer), Binary)).
+
+raw32() ->
+    ?LET(Binary, binary(65537), Binary).
+
+fix_array() ->
+    eqc_gen:resize(16, eqc_gen:list(oneof(primitive_types()))).
+
+array16() ->
+    eqc_gen:resize(128, eqc_gen:list(oneof(primitive_types()))).
+
+-endif.
 -endif.

@@ -1,2 +1,3 @@
-{build, "make test"}.
-{test_path, ".eunit"}.
+{build, "make deps test"}.
+{test_path, "_build/test/lib/msgpack/ebin"}.
+{test_path, "_build/test/lib/msgpack/test"}.
