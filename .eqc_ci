@@ -1,2 +1,2 @@
-{build, "./rebar eunit"}.
+{build, "make test"}.
 {test_path, ".eunit"}.
