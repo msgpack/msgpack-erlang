@@ -80,8 +80,10 @@ ext_typecode_range_test() ->
     Packer = fun ({thing, N}, _) ->
                      {ok, {N, msgpack:pack(N)}}
              end,
-    Unpacker = fun(_N, Bin, _) ->
-                       msgpack:unpack(Bin)
+    Unpacker = fun(N, Bin, _) ->
+                       Result = msgpack:unpack(Bin),
+                       ?assertEqual({ok, N}, Result),
+                       Result
                end,
     Opt = [{ext,{Packer,Unpacker}}],
     %% it should be possible to use an uncontroversial ext type code:
