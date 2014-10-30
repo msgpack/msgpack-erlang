@@ -94,4 +94,7 @@ ext_typecode_range_test() ->
          Result = msgpack:unpack(Encoded, Opt),
          ?assertMatch({ok, N}, Result)
      end || N <- lists:seq(TypecodeMin,TypecodeMax)],
+    %% using codes outside the allowed range should fail:
+    [?assertError({case_clause, _}, msgpack:pack({thing, N}, Opt))
+     || N <- [-129, 128]],
     ok.
