@@ -70,3 +70,28 @@ behaviour_test() ->
     Opt = [{ext, ?MODULE}],
     Term = {native, {self(), make_ref(), foobar, fun() -> ok end}},
     {ok, Term} = msgpack:unpack(msgpack:pack(Term, Opt), Opt).
+
+
+ext_typecode_range_test() ->
+    %% typecode range from msgpack spec. [-128,-1] is the "reserved"
+    %% range, [0,127] is the "user-defined" range.
+    TypecodeMin = -128,
+    TypecodeMax = 127,
+    Packer = fun ({thing, N}, _) ->
+                     {ok, {N, msgpack:pack(N)}}
+             end,
+    Unpacker = fun(_N, Bin, _) ->
+                       msgpack:unpack(Bin)
+               end,
+    Opt = [{ext,{Packer,Unpacker}}],
+    %% it should be possible to use an uncontroversial ext type code:
+    Enc = msgpack:pack({thing,1}, Opt),
+    ?assertMatch({ok, 1}, msgpack:unpack(Enc, Opt)),
+    %% it should be possible to use ext typecodes covering the entire
+    %% range specified in the msgpack specification:
+    [begin
+         Encoded = msgpack:pack({thing, N}, Opt),
+         Result = msgpack:unpack(Encoded, Opt),
+         ?assertMatch({ok, N}, Result)
+     end || N <- lists:seq(TypecodeMin,TypecodeMax)],
+    ok.

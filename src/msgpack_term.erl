@@ -21,7 +21,7 @@
          pack_ext/2, unpack_ext/3]).
 -behaviour(msgpack_ext).
 
--define(ERLANG_TERM, 131).
+-define(ERLANG_TERM, 127).
 -define(TERM_OPTION, [{enable_str,true},{ext,?MODULE},{allow_atom,none}]).
 
 %% @doc experimental

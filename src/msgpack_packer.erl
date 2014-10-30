@@ -374,7 +374,7 @@ pack_map(M, Opt)->
 -spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
 pack_ext(Any, Packer, Opt) ->
     case Packer(Any, Opt) of
-        {ok, {Type, Data}} when 0 < Type andalso Type < 16#100 ->
+        {ok, {Type, Data}} when -16#80 =< Type andalso Type =< 16#7F ->
             Bin = case byte_size(Data) of
                       1  -> <<16#D4, Type:8, Data/binary>>;
                       2  -> <<16#D5, Type:8, Data/binary>>;
