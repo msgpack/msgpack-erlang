@@ -168,13 +168,43 @@ issue_27_test_() ->
                    msgpack:unpack(msgpack:pack(nil,
                                                [{format,jsx},{allow_atom,pack}])))].
 
-string_test() ->
+string_test_() ->
     {ok, CWD} = file:get_cwd(),
     Path = CWD ++ "/../test/utf8.txt",
-    {ok, UnicodeBin} = file:read_file(Path),
-    String = unicode:characters_to_list(UnicodeBin),
-    MsgpackStringBin = msgpack:pack(String),
-    {ok, String} = msgpack:unpack(MsgpackStringBin).
+    {ok, Data} = file:read_file(Path),
+    UnicodeBin = binary:split(Data, <<10>>,[global]),
+    [
+        % fixarray of uint 16
+        ?_assertMatch(
+            << 2#1001:4, _Len:4, 16#CD, _Bin/binary>>,
+            msgpack:pack(
+                unicode:characters_to_list(
+                    lists:nth(1, UnicodeBin)))),
+        ?_assertMatch(
+            {ok, _Data},
+            msgpack:unpack(
+                msgpack:pack(
+                    unicode:characters_to_list(
+                        lists:nth(1, UnicodeBin))))),
+        % fixstr: 0xa0 - 0xbf
+        ?_assertMatch(
+            <<2#101:3, _Len:5, _Bin/binary>>,
+            msgpack:pack(lists:nth(1, UnicodeBin))),
+        % str 8: 0xd9
+        ?_assertMatch(
+            <<16#D9, _Len:8/big-unsigned-integer-unit:1, _Bin/binary>>,
+            msgpack:pack(lists:nth(2, UnicodeBin))),
+        ?_assertMatch(
+            {ok, _Data},
+            msgpack:unpack(msgpack:pack(lists:nth(2, UnicodeBin)))),
+        % str 16: 0xda
+        ?_assertMatch(
+            <<16#DA, _Len:16/big-unsigned-integer-unit:1, _Bin/binary>>,
+            msgpack:pack(lists:nth(3, UnicodeBin))),
+        ?_assertMatch(
+            {ok, _Data},
+            msgpack:unpack(msgpack:pack(lists:nth(3, UnicodeBin))))
+    ].
 
 default_test_() ->
     [
