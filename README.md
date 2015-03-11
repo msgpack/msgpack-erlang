@@ -99,6 +99,14 @@ Apache License 2.0
 
 # Release Notes
 
+## 0.3.3
+
+- Add OTP 17 series to Travis-CI tests
+- Fix wrong numbering for ext types
+- Allow packing maps even when {format,map} is not set
+- Fix Dialyzer invalid contract warning
+- Proper use of null for jiffy-style encoding/decoding
+
 ## 0.3.2
 
 - set back default style as jiffy
