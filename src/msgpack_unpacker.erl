@@ -126,42 +126,42 @@ unpack_stream(<<16#C1, _R/binary>>, _) ->  throw({badarg, 16#C1});
 %% for extention types
 
 %% fixext 1 stores an integer and a byte array whose length is 1 byte
-unpack_stream(<<16#D4, T:8, Data:1/binary, Rest/binary>>,
+unpack_stream(<<16#D4, T:1/signed-integer-unit:8, Data:1/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#D4, Unpack, T, Data, Rest, Orig);
 
 %% fixext 2 stores an integer and a byte array whose length is 2 bytes
-unpack_stream(<<16#D5, T:8, Data:2/binary, Rest/binary>>,
+unpack_stream(<<16#D5, T:1/signed-integer-unit:8, Data:2/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#D5, Unpack, T, Data, Rest, Orig);
 
 %% fixext 4 stores an integer and a byte array whose length is 4 bytes
-unpack_stream(<<16#D6, T:8, Data:4/binary, Rest/binary>>,
+unpack_stream(<<16#D6, T:1/signed-integer-unit:8, Data:4/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#D6, Unpack, T, Data, Rest, Orig);
 
 %% fixext 8 stores an integer and a byte array whose length is 8 bytes
-unpack_stream(<<16#D7, T:8, Data:8/binary, Rest/binary>>,
+unpack_stream(<<16#D7, T:1/signed-integer-unit:8, Data:8/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#D7, Unpack, T, Data, Rest, Orig);
 
 %% fixext 16 stores an integer and a byte array whose length is 16 bytes
-unpack_stream(<<16#D8, T:8, Data:16/binary, Rest/binary>>,
+unpack_stream(<<16#D8, T:1/signed-integer-unit:8, Data:16/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#D8, Unpack, T, Data, Rest, Orig);
 
 %% ext 8 stores an integer and a byte array whose length is upto (2^8)-1 bytes:
-unpack_stream(<<16#C7, Len:8, Type:8, Data:Len/binary, Rest/binary>>,
+unpack_stream(<<16#C7, Len:8, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#C7, Unpack, Type, Data, Rest, Orig);
 
 %% ext 16 stores an integer and a byte array whose length is upto (2^16)-1 bytes:
-unpack_stream(<<16#C8, Len:16, Type:8, Data:Len/binary, Rest/binary>>,
+unpack_stream(<<16#C8, Len:16, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
     maybe_unpack_ext(16#C8, Unpack, Type, Data, Rest, Orig);
 
 %% ext 32 stores an integer and a byte array whose length is upto (2^32)-1 bytes:
-unpack_stream(<<16#C9, Len:32, Type:8, Data:Len/binary, Rest/binary>>,
+unpack_stream(<<16#C9, Len:32, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt)  ->
     maybe_unpack_ext(16#C9, Unpack, Type, Data, Rest, Orig);
 

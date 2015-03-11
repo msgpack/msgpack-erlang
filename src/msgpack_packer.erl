@@ -374,19 +374,19 @@ pack_map(M, Opt)->
 -spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
 pack_ext(Any, Packer, Opt) ->
     case Packer(Any, Opt) of
-        {ok, {Type, Data}} when 0 < Type andalso Type < 16#100 ->
+        {ok, {Type, Data}} when -16#80 =< Type andalso Type =< 16#7F ->
             Bin = case byte_size(Data) of
-                      1  -> <<16#D4, Type:8, Data/binary>>;
-                      2  -> <<16#D5, Type:8, Data/binary>>;
-                      4  -> <<16#D6, Type:8, Data/binary>>;
-                      8  -> <<16#D7, Type:8, Data/binary>>;
-                      16 -> <<16#D8, Type:8, Data/binary>>;
+                      1  -> <<16#D4, Type:1/signed-integer-unit:8, Data/binary>>;
+                      2  -> <<16#D5, Type:1/signed-integer-unit:8, Data/binary>>;
+                      4  -> <<16#D6, Type:1/signed-integer-unit:8, Data/binary>>;
+                      8  -> <<16#D7, Type:1/signed-integer-unit:8, Data/binary>>;
+                      16 -> <<16#D8, Type:1/signed-integer-unit:8, Data/binary>>;
                       Len when Len < 16#100 ->
-                          <<16#C7, Len:8, Type:8, Data/binary>>;
+                          <<16#C7, Len:8, Type:1/signed-integer-unit:8, Data/binary>>;
                       Len when Len < 16#10000 ->
-                          <<16#C8, Len:16, Type:8, Data/binary>>;
+                          <<16#C8, Len:16, Type:1/signed-integer-unit:8, Data/binary>>;
                       Len when Len < 16#100000000 ->
-                          <<16#C9, Len:32, Type:8, Data/binary>>
+                          <<16#C9, Len:32, Type:1/signed-integer-unit:8, Data/binary>>
                   end,
             {ok, Bin};
         {error, E} ->
