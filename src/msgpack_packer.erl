@@ -122,7 +122,7 @@ handle_binary(Bin, Opt) ->
     end.
 
 %% %% map interface
-handle_ext(Map, Opt = ?OPTION{interface=map}) when is_map(Map) ->
+handle_ext(Map, Opt) when is_map(Map) ->
     pack_map(maps:to_list(Map), Opt);
 
 handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,

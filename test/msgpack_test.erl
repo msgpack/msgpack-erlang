@@ -237,6 +237,13 @@ map_test_()->
               ?assertEqual(BinaryJSX, Binary)
       end},
 
+     {"pack map without {format,map}",
+      fun() ->
+	      Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16) ]),
+	      Binary = pack(Map),
+	      ?assertEqual({ok,Map}, unpack(Binary, [{format,map}]))
+      end},
+
      {"map length 16",
       fun() ->
               Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16) ]),
