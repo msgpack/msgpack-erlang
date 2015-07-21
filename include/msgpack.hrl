@@ -55,17 +55,27 @@
                                  {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()} | module()}
                                 ].
 
+-ifdef(default_map).
+
+-define(DEFAULT_MAP_FORMAT, map).
+-define(DEFAULT_MAP_UNPACKER_FUN, fun msgpack_unpacker:unpack_map/3).
+
+-else.
+
+-define(DEFAULT_MAP_FORMAT, jiffy).
+-define(DEFAULT_MAP_UNPACKER_FUN, fun msgpack_unpacker:unpack_map_jiffy/3).
+
+-endif.
+
 -record(options_v1, {
-          interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
-                                 msgpack_map_unpacker(),
+          interface = ?DEFAULT_MAP_FORMAT :: jiffy | jsx,
+          map_unpack_fun = ?DEFAULT_MAP_UNPACKER_FUN :: msgpack_map_unpacker(),
           impl = erlang     :: erlang | nif
          }).
 
 -record(options_v2, {
-          interface = jiffy :: jiffy | jsx,
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
-                                 msgpack_map_unpacker(),
+          interface = ?DEFAULT_MAP_FORMAT :: jiffy | jsx,
+          map_unpack_fun = ?DEFAULT_MAP_UNPACKER_FUN :: msgpack_map_unpacker(),
           impl = erlang      :: erlang | nif,
           allow_atom = none  :: none | pack, %% allows atom when packing
           enable_str = false :: boolean(), %% true for new spec
@@ -80,10 +90,10 @@
 -type msgpack_option() :: #options_v2{}.
 
 -else.
+
 -record(options_v3, {
-          interface = jiffy :: format_type(),
-          map_unpack_fun = fun msgpack_unpacker:unpack_map_jiffy/3 ::
-                                 msgpack_map_unpacker(),
+          interface = ?DEFAULT_MAP_FORMAT :: format_type(),
+          map_unpack_fun = ?DEFAULT_MAP_UNPACKER_FUN :: msgpack_map_unpacker(),
           impl = erlang      :: erlang | nif,
           allow_atom = none  :: none | pack, %% allows atom when packing
           enable_str = false :: boolean(), %% true for new spec
