@@ -23,6 +23,8 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
+-include("msgpack.hrl").
+
 -ifdef(DO_MSGPACK_CROSSLANG_TEST).
 
 test_data() ->
@@ -148,25 +150,25 @@ issue_27_test_() ->
     [
      %% null(jiffy) => nil(msgpack) => null(jsx)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null), [{format,jsx}])),
+                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jsx}])),
 
      %% null(jiffy) => nil(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]))),
+                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jiffy}])),
 
 
      %% null(jsx) => nil(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]))),
+                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]), [{format,jiffy}])),
 
      %% nil(jiffy-atom) => <<nil>>(msgpack-binary) => <<"nil">>
      ?_assertEqual({ok, <<"nil">>},
-                   msgpack:unpack(msgpack:pack(nil, [{allow_atom,pack}]))),
+                   msgpack:unpack(msgpack:pack(nil, [{allow_atom,pack}, {format,jiffy}]), [{format,jiffy}])),
 
      %% nil(jsx-atom) => <<nil>>(msgpack-binary) => <<"nil">>
      ?_assertEqual({ok, <<"nil">>},
                    msgpack:unpack(msgpack:pack(nil,
-                                               [{format,jsx},{allow_atom,pack}])))].
+                                               [{format,jsx},{allow_atom,pack}]), [{format,jiffy}]))].
 
 string_test() ->
     {ok, CWD} = file:get_cwd(),
@@ -181,13 +183,13 @@ default_test_() ->
      {"pack",
       fun() ->
               Map = {[{1,2}]},
-              ?assertEqual(pack(Map, [{format, jiffy}]), pack(Map))
+              ?assertEqual(pack(Map, [{format, ?DEFAULT_MAP_FORMAT}]), pack(Map))
       end},
      {"unpack",
       fun() ->
               Map = {[{1,2}]},
-              Binary = pack(Map, [{format, jiffy}]),
-              ?assertEqual(unpack(Binary, [{format, jiffy}]), unpack(Binary))
+              Binary = pack(Map, [{format, ?DEFAULT_MAP_FORMAT}]),
+              ?assertEqual(unpack(Binary, [{format, ?DEFAULT_MAP_FORMAT}]), unpack(Binary))
       end}
     ].
 

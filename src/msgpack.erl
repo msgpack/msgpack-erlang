@@ -165,6 +165,24 @@ parse_options([{ext, {Packer,Unpacker}}|TL], Opt0) when
 -ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
+-ifdef(default_map).
+
+test_data()->
+    [true, false, nil,
+     0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
+     -1, -23, -512, -1230, -567898, -16#FFFFFFFFFF,
+     -16#80000001,
+     123.123, -234.4355, 1.0e-34, 1.0e64,
+     [23, 234, 0.23],
+     <<"hogehoge">>, <<"243546rf7g68h798j", 0, 23, 255>>,
+     <<"hoasfdafdas][">>,
+     [0,42, <<"sum">>, [1,2]], [1,42, nil, [3]],
+     -234, -40000, -16#10000000, -16#100000000,
+     42
+    ].
+
+-else.
+
 test_data()->
     [true, false, null,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
@@ -178,6 +196,8 @@ test_data()->
      -234, -40000, -16#10000000, -16#100000000,
      42
     ].
+
+-endif.
 
 enable_str_test() ->
     ?assertEqual(<<167:8, (<<"saitama">>)/binary >>,
