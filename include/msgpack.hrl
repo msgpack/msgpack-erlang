@@ -33,7 +33,7 @@
 
 %% Erlang representation of msgpack data.
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() |
-                        integer() | float() | binary().
+                        integer() | float() | boolean() | binary().
 
 %% @doc ext_packer that packs only tuples with length > 2
 -type msgpack_ext_packer()   :: fun((tuple(), msgpack:options()) ->
