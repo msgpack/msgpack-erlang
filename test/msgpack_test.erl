@@ -178,6 +178,15 @@ string_test() ->
     MsgpackStringBin = msgpack:pack(String),
     {ok, String} = msgpack:unpack(MsgpackStringBin).
 
+string_length_encoding_test() ->
+    %% This test checks proper deserialization of strings that
+    %% have been encoded with all valid length encodings
+    {ok, <<42>>} = msgpack:unpack(<<2#10100001,42>>),
+    {ok, <<42>>} = msgpack:unpack(<<16#D9,1,42>>),
+    {ok, <<42>>} = msgpack:unpack(<<16#DA,0,1,42>>),
+    {ok, <<42>>} = msgpack:unpack(<<16#DB,0,0,0,1,42>>).
+    
+
 default_test_() ->
     [
      {"pack",
