@@ -84,13 +84,6 @@
           original_list = []       :: msgpack_list_options()
          }).
 
--ifdef(without_map).
-
--define(OPTION, #options_v2).
--type msgpack_option() :: #options_v2{}.
-
--else.
-
 -record(options_v3, {
           interface = ?DEFAULT_MAP_FORMAT :: format_type(),
           map_unpack_fun = ?DEFAULT_MAP_UNPACKER_FUN :: msgpack_map_unpacker(),
@@ -104,6 +97,3 @@
 
 -define(OPTION, #options_v3).
 -type msgpack_option() :: #options_v3{}.
-
--endif.
-

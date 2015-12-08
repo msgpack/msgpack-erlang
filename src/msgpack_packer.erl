@@ -85,33 +85,6 @@ pack(List, Opt)  when is_list(List) ->
 pack(Other, Opt) ->
     handle_ext(Other, Opt).
 
--ifdef(without_map).
-
-%% TODO: maybe we don't need this inside ifdef
-%%       as to use ?OPTION{enable_str=boolean()}
-handle_binary(Bin, Opt) ->
-    case Opt of
-        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
-        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
-        #options_v1{} = Opt -> pack_raw(Bin)
-    end.
-
-%% Packing ext type with user defined packer function
-handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,
-                         original_list=Orig,
-                         interface=Interface})
-  when is_function(Packer) andalso Interface =/= map ->
-
-    case pack_ext(Any, Packer, Orig) of
-        {ok, Binary} -> Binary;
-        {error, E} -> throw({error, E})
-    end;
-
-handle_ext(Other, _) ->
-    throw({badarg, Other}).
-
--else.
-
 handle_binary(Bin, Opt) ->
     case Opt of
         #options_v3{enable_str=true} = Opt -> pack_raw2(Bin);
@@ -136,8 +109,6 @@ handle_ext(Any, _Opt = ?OPTION{ext_packer=Packer,
 
 handle_ext(Other, _) ->
     throw({badarg, Other}).
-
--endif.
 
 -spec pack_int(integer()) -> binary().
 %% negative fixnum

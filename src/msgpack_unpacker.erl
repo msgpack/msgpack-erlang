@@ -24,11 +24,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 
--ifndef(without_map).         
--export([unpack_map/3]).
--endif.
-
--export([unpack_map_jiffy/3, unpack_map_jsx/3]).
+-export([unpack_map/3, unpack_map_jiffy/3, unpack_map_jsx/3]).
 
 %% unpack them all
 -spec unpack_stream(Bin::binary(), msgpack_option()) -> {msgpack:object(), binary()} | no_return().
@@ -175,36 +171,25 @@ unpack_array(Bin, Len, Acc, Opt) ->
     {Term, Rest} = unpack_stream(Bin, Opt),
     unpack_array(Rest, Len-1, [Term|Acc], Opt).
 
--ifdef(without_map).
-map_unpacker(jiffy) ->
-    fun ?MODULE:unpack_map_jiffy/3;
-map_unpacker(jsx) ->
-    fun ?MODULE:unpack_map_jsx/3.
--else.
 map_unpacker(map) ->
     fun ?MODULE:unpack_map/3;
 map_unpacker(jiffy) ->
     fun ?MODULE:unpack_map_jiffy/3;
 map_unpacker(jsx) ->
     fun ?MODULE:unpack_map_jsx/3.
--endif.
 
-
-
--ifndef(without_map).
 -spec unpack_map(binary(), non_neg_integer(), msgpack_option()) ->
                         {map(), binary()} | no_return().
 unpack_map(Bin, Len, Opt) ->
+    %% TODO: optimize with unpack_map/4
     {Map, Rest} = unpack_map_as_proplist(Bin, Len, [], Opt),
     {maps:from_list(Map), Rest}.
-%%     unpack_map(Bin, Len, #{}, Opt).
 
 %% unpack_map(Bin, Len, Acc, _) -> {Acc, Bin};
 %% unpack_map(Bin, Len, Acc, Opt) ->
 %%     {Key, Rest} = unpack_stream(Bin, Opt),
 %%     {Value, Rest2} = unpack_stream(Rest, Opt),
 %%     unpack_map(Rest2, Len-1, maps:put(Key, Value, Acc), Opt).
--endif.
 
 %% Users SHOULD NOT send too long list: this uses lists:reverse/1
 -spec unpack_map_jiffy(binary(), non_neg_integer(), msgpack_option()) ->
