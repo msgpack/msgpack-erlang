@@ -99,6 +99,12 @@ Apache License 2.0
 
 # Release Notes
 
+## 0.3.5 / 0.3.4
+
+- 0.3 series will be the last versions that supports R16B or older
+  versions of OTP.
+- OTP 18.0 support
+
 ## 0.3.3
 
 - Add OTP 17 series to Travis-CI tests
