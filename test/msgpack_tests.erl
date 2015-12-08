@@ -28,14 +28,14 @@
 -ifdef(DO_MSGPACK_CROSSLANG_TEST).
 
 test_data() ->
-    [true, false, nil,
+    [true, false, null,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
      -1, -23, -512, -1230, -567898, -16#FFFFFFFFFF,
      123.123, -234.4355, 1.0e-34, 1.0e64,
      [23, 234, 0.23],
      <<"hogehoge">>, <<"243546rf7g68h798j", 0, 23, 255>>,
      <<"hoasfdafdas][">>,
-     [0,42, <<"sum">>, [1,2]], [1,42, nil, [3]],
+     [0,42, <<"sum">>, [1,2]], [1,42, null, [3]],
      -234, -40000, -16#10000000, -16#100000000,
      42].
 
@@ -97,8 +97,8 @@ unknown_test_freezed_test_dont_do_this()->
              123.123,
              -234.4355, 1.0e-34, 1.0e64,
              [23, 234, 0.23],
-             [0,42,<<"sum">>, [1,2]], [1,42, nil, [3]],
-             [{1,2},{<<"hoge">>,nil}], % map
+             [0,42,<<"sum">>, [1,2]], [1,42, null, [3]],
+             [{1,2},{<<"hoge">>,null}], % map
              -234, -50000,
              42
             ],
@@ -148,27 +148,18 @@ issue_jiffy_5_test() ->
 
 issue_27_test_() ->
     [
-     %% null(jiffy) => nil(msgpack) => null(jsx)
+     %% null(jiffy) => null(msgpack) => null(jsx)
      ?_assertEqual({ok, null},
                    msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jsx}])),
 
-     %% null(jiffy) => nil(msgpack) => null(jiffy)
+     %% null(jiffy) => null(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
                    msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jiffy}])),
 
 
-     %% null(jsx) => nil(msgpack) => null(jiffy)
+     %% null(jsx) => null(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]), [{format,jiffy}])),
-
-     %% nil(jiffy-atom) => <<nil>>(msgpack-binary) => <<"nil">>
-     ?_assertEqual({ok, <<"nil">>},
-                   msgpack:unpack(msgpack:pack(nil, [{allow_atom,pack}, {format,jiffy}]), [{format,jiffy}])),
-
-     %% nil(jsx-atom) => <<nil>>(msgpack-binary) => <<"nil">>
-     ?_assertEqual({ok, <<"nil">>},
-                   msgpack:unpack(msgpack:pack(nil,
-                                               [{format,jsx},{allow_atom,pack}]), [{format,jiffy}]))].
+                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]), [{format,jiffy}]))].
 
 string_test() ->
     {ok, CWD} = file:get_cwd(),
