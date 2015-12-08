@@ -6,7 +6,7 @@
 
 ## prequisites for runtime
 
-[Erlang/OTP](http://erlang.org/), >= R15B -- for older version, rebar won't work.
+[Erlang/OTP](http://erlang.org/), >= 17.0
 Also based on [the new msgpack spec 232a0d](https://github.com/msgpack/msgpack/blob/232a0d14c6057000cc4a478f0dfbb5942ac54e9e/spec.md).
 
 ## edit rebar.config to use in your application
@@ -14,7 +14,7 @@ Also based on [the new msgpack spec 232a0d](https://github.com/msgpack/msgpack/b
 ```erlang
 {deps, [
   {msgpack, ".*",
-    {git, "git://github.com/msgpack/msgpack-erlang.git", "master"}}
+    {git, "git://github.com/msgpack/msgpack-erlang.git", {branch, "master"}}}
 ]}.
 ```
 
@@ -98,6 +98,11 @@ See [msgpack-erlang-tests](http://github.com/kuenishi/msgpack-erlang-tests) for 
 Apache License 2.0
 
 # Release Notes
+
+## 0.4.0
+
+- Deprecate `nil`
+- Moved to rebar3
 
 ## 0.3.5 / 0.3.4
 
