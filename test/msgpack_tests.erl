@@ -25,8 +25,6 @@
 
 -include("msgpack.hrl").
 
--ifdef(DO_MSGPACK_CROSSLANG_TEST).
-
 test_data() ->
     [true, false, null,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
@@ -40,13 +38,15 @@ test_data() ->
      42].
 
 test_data_jsx()->
-    test_data() ++ [[{}], {hoge}].
+    test_data() ++ [[{}]].
 
 test_data_jiffy()->
-    test_data() ++ [ {[]}, {hoge} ].
+    test_data() ++ [ {[]} ].
 
 test_data_map()->
-    test_data() ++ [ #{}, {hoge} ].
+    test_data() ++ [ #{} ].
+
+-ifdef(DO_MSGPACK_CROSSLANG_TEST).
 
 compare_all([], [])-> ok;
 compare_all([],  R)-> {toomuchrhs, R};
@@ -397,9 +397,93 @@ binary_test_() ->
 %%             end}
 %%     ].
 
-%% benchmark_test()->
-%%     Data = [test_data() || _ <- lists:seq(0, 10000)],
-%%     {ok, S} = ?debugTime("  serialize", pack(Data)),
-%%     {ok, Data} = ?debugTime("deserialize", unpack(S)),
-%%     ?debugFmt("for ~p KB test data.", [byte_size(S) div 1024]),
-%%     ok.
+-define(PCNT, 5).
+-define(CNT, 10000).
+
+benchmark0_test()->
+    Data=[test_data_jiffy() || _ <- lists:seq(0, ?CNT)],
+    S=?debugTime("  serialize", msgpack:pack(Data, [{format, jiffy}])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{format, jiffy}])),
+    ?debugFmt("for ~p KB test data(jiffy).", [byte_size(S) div 1024]).
+
+benchmark1_test()->
+    Data=[test_data_jsx() || _ <- lists:seq(0, ?CNT)],
+    S=?debugTime("  serialize", msgpack:pack(Data, [{format, jsx}])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{format, jsx}])),
+    ?debugFmt("for ~p KB test data(jsx).", [byte_size(S) div 1024]).
+
+benchmark2_test()->
+    Data=[test_data_map() || _ <- lists:seq(0, ?CNT)],
+    S=?debugTime("  serialize", msgpack:pack(Data)),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S)),
+    ?debugFmt("for ~p KB test data(maps).", [byte_size(S) div 1024]).
+
+benchmark3_test()->
+    Data=[test_data() ++ [null] || _ <- lists:seq(0, ?CNT)],
+    S=?debugTime("  serialize", term_to_binary(Data)),
+    Data=?debugTime("deserialize", binary_to_term(S)),
+    ?debugFmt("for ~p KB test data(t2b/b2t).", [byte_size(S) div 1024]).
+
+multirunner(What, Pack, Unpack) ->
+    Self = self(),
+    Nil = null,
+                   
+    Data=[test_data() ++ [Nil] || _ <- lists:seq(0, ?CNT)],
+    Packed = Pack(Data),
+    Size = byte_size(Packed) div 1024,
+    [ spawn(fun() ->
+                    {T, _} = timer:tc(Pack, [Data]),
+                    Self ! {p0, N, T}
+            end)|| N <- lists:seq(1, ?PCNT)],
+    TimesPack = [receive
+                     {p0, N, Time} ->
+                         Time
+                 end || N <- lists:seq(1, ?PCNT)],
+    TotalPack = lists:foldl(fun(N, Acc) ->
+                                    Acc + N
+                            end, 0, TimesPack),
+    [ spawn(fun() ->
+                    {T, _} = timer:tc(Unpack, [Packed]),
+                    Self ! {p0, N, T}
+            end) || N <- lists:seq(1, ?PCNT)],
+    TimesUnpack = [receive
+                       {p0, N, Time} ->
+                           Time
+                   end || N <- lists:seq(1, ?PCNT)],
+    TotalUnpack = lists:foldl(fun(N, Acc) ->
+                                      Acc + N
+                              end, 0, TimesUnpack),
+    ?debugFmt("~.3f s/~.3f s for ser/de ~p KB test data(~s x ~p).",
+              [TotalPack/1000/1000/?PCNT, TotalUnpack/1000/1000/?PCNT,
+               Size, What, ?PCNT]),
+    ok.
+
+benchmark_p0_test_() ->
+    [{timeout, 600,
+      ?_assertEqual(ok,
+                    multirunner("jiffy",
+                                fun(Data) ->
+                                        msgpack:pack(Data, [{format, jiffy}])
+                                end,
+                                fun(Data) ->
+                                        msgpack:unpack(Data, [{format, jiffy}])
+                                end))},
+     {timeout, 600,
+      ?_assertEqual(ok,
+                    multirunner("jsx",
+                                fun(Data) ->
+                                        msgpack:pack(Data, [{format, jsx}])
+                                end,
+                                fun(Data) ->
+                                        msgpack:unpack(Data, [{format, jsx}])
+                                end))},
+     {timeout, 600,
+      ?_assertEqual(ok,
+                    multirunner("maps",
+                                fun msgpack:pack/1,
+                                fun msgpack:unpack/1))},
+     {timeout, 600,
+      ?_assertEqual(ok,
+                    multirunner("t2b/b2t",
+                                fun erlang:term_to_binary/1,
+                                fun erlang:binary_to_term/1))}].
