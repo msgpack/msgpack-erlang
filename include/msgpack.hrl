@@ -55,17 +55,8 @@
                                  {ext, {msgpack_ext_packer(),msgpack_ext_unpacker()} | module()}
                                 ].
 
--ifdef(default_map).
-
 -define(DEFAULT_MAP_FORMAT, map).
 -define(DEFAULT_MAP_UNPACKER_FUN, fun msgpack_unpacker:unpack_map/3).
-
--else.
-
--define(DEFAULT_MAP_FORMAT, jiffy).
--define(DEFAULT_MAP_UNPACKER_FUN, fun msgpack_unpacker:unpack_map_jiffy/3).
-
--endif.
 
 -record(options_v1, {
           interface = ?DEFAULT_MAP_FORMAT :: jiffy | jsx,
