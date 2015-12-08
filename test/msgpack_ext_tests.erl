@@ -16,7 +16,7 @@
 %%    limitations under the License.
 %%
 
--module(msgpack_ext_example_tests).
+-module(msgpack_ext_tests).
 
 -compile(export_all).
 

@@ -17,7 +17,7 @@
 %%
 %% Created : 26 Apr 2011 by UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
 
--module(msgpack_test).
+-module(msgpack_tests).
 
 -import(msgpack, [pack/2, unpack/2, pack/1, unpack/1]).
 
@@ -172,7 +172,8 @@ issue_27_test_() ->
 
 string_test() ->
     {ok, CWD} = file:get_cwd(),
-    Path = CWD ++ "/../test/utf8.txt",
+    Path = CWD ++ "/test/utf8.txt",
+    %% ?debugVal(Path),
     {ok, UnicodeBin} = file:read_file(Path),
     String = unicode:characters_to_list(UnicodeBin),
     MsgpackStringBin = msgpack:pack(String),

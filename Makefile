@@ -1,6 +1,6 @@
 .PHONY: compile xref eunit clean doc check make deps test
 
-REBAR=./rebar
+REBAR=./rebar3
 
 all: compile
 
@@ -18,11 +18,11 @@ deps:
 compile:
 	@$(REBAR) compile
 
-xref: compile
+xref:
 	@$(REBAR) xref
 
-test: compile xref
-	@./rebar eunit
+test:
+	@$(REBAR) eunit
 
 clean:
 	@$(REBAR) clean
