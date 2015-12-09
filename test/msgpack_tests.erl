@@ -21,7 +21,6 @@
 
 -import(msgpack, [pack/2, unpack/2, pack/1, unpack/1]).
 
--define(EQC, true).
 -ifdef(EQC).
 -include_lib("eqc/include/eqc.hrl").
 -endif.

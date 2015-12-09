@@ -42,11 +42,6 @@ eqc_test_() ->
       ?_assertProp(prop_msgpack([{format, jsx}]))
       ]}.
 
--ifndef(without_map).
-%% eqc_17_0_test_() ->
-%%     ?_assertProp(prop_msgpack([{format, map}])).
--endif.
-
 prop_msgpack() ->
     ?FORALL(Obj, msgpack_object(),
             begin

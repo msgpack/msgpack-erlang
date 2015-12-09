@@ -1,3 +1,4 @@
-{build, "make deps test"}.
+{build, "./rebar3 compile eqc"}.
 {test_path, "_build/test/lib/msgpack/ebin"}.
 {test_path, "_build/test/lib/msgpack/test"}.
+{test_path, "_build/test/lib/msgpack/eqc"}.
