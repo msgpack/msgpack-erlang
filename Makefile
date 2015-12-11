@@ -26,7 +26,9 @@ dialyzer:
 	@$(REBAR) dialyzer
 
 check-all:
-	@$(REBAR)  eunit xref dialyzer
+	@$(REBAR) eunit
+	@$(REBAR) xref
+	@$(REBAR) dialyzer
 
 crosslang:
 	@echo "do ERL_LIBS=../ before you make crosslang or fail"
