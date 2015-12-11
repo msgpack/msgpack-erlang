@@ -10,9 +10,6 @@ ma: all
 mak: all
 make: all
 
-deps:
-	@$(REBAR) update-deps get-deps
-
 compile:
 	@$(REBAR) compile
 
