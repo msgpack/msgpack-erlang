@@ -1,5 +1,6 @@
 language: erlang
 sudo: false
+install: echo rebar3
 script: make check-all
 notifications:
   email: false
