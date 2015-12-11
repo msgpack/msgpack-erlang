@@ -5,3 +5,4 @@ ebin/*.app
 deps
 *.so
 _build
+.rebar3
