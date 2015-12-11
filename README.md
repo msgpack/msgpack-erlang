@@ -104,6 +104,8 @@ Apache License 2.0
 - Deprecate `nil`
 - Moved to rebar3
 - Promote default map unpacker as default format when OTP is >= 17
+- Added QuickCheck tests
+- Since this version OTP older than R16B03-1 are no more supported
 
 ## 0.3.5 / 0.3.4
 
