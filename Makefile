@@ -1,6 +1,6 @@
 .PHONY: compile xref eunit clean check-all make deps test
 
-REBAR=./rebar3
+REBAR=rebar3
 
 all: compile
 
