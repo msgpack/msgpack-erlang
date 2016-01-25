@@ -1,10 +1,11 @@
 language: erlang
 sudo: false
-install: echo rebar3
-script: make check-all
+install: wget https://s3.amazonaws.com/rebar3/rebar3 && chmod 755 rebar3
+script: PATH=.:$PATH make check-all
 notifications:
   email: false
 otp_release:
+  - 18.2.1
   - 18.1
   - 18.0
   - 17.5
