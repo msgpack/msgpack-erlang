@@ -4,7 +4,7 @@
 
 [![Drone.io](https://drone.io/github.com/msgpack/msgpack-erlang/status.png)](https://drone.io/github.com/msgpack/msgpack-erlang)
 
-## prequisites for runtime
+## Prerequisites for runtime
 
 [Erlang/OTP](http://erlang.org/), >= 17.0
 Also based on [the new msgpack spec 232a0d](https://github.com/msgpack/msgpack/blob/232a0d14c6057000cc4a478f0dfbb5942ac54e9e/spec.md).
@@ -33,7 +33,30 @@ Ham = msgpack:pack(Spam),
 ...
 ```
 
-## String type
+## Options, for packing and unpacking
+
+### `{spec, new|old}`
+
+Both packing and unpacking.
+
+[old spec](https://github.com/msgpack/msgpack/blob/master/spec-old.md):
+
+```erlang
+OldHam = msgpack:pack(Spam, [{enable_str,false}]),
+{ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).
+```
+
+### `{allow_atom, none|pack}`
+
+Only in packing
+
+### `{known_atoms, [atom()]}`
+
+Both in packing and unpacking
+
+### `{str, as_binary|as_list|as_validated_list}`
+
+Both in packing and unpacking. Only available at new spec.
 
 Now this supports string type!
 
@@ -43,25 +66,21 @@ Opt = [{enable_str, true}]
  => {ok,[22524,29577]}
 ```
 
-There are several options for `msgpack:pack/2` and `msgpack:unpack/2` .
-See `msgpack:options()` in `msgpack.hrl`.
 
-## Map Style
+### `{map_format, maps|jiffy|jsx}`
 
-Since Erlang/OTP 17.0
+Both at packing and unpacking.
 
 ```erlang
-msgpack:pack(#{ <<"key">> => <<"value">> }, [{format, map}]).
-```
-
-Or use old jiffy/jsx style
-
-```erlang
+msgpack:pack(#{ <<"key">> => <<"value">> }, []).
 msgpack:pack({[{<<"key">>, <<"value">>}]}, [{format, jiffy}]),
 msgpack:pack([{<<"key">>, <<"value">>}], [{format, jsx}]).
 ```
 
-## Ext type
+
+### `{ext, {msgpack_ext_packer(), msgpack_ext_unpacker()}|module()}`
+
+At both.
 
 Now msgpack-erlang supports ext type. Now you can serialize everything
 with your original (de)serializer. That will enable us to handle
@@ -76,28 +95,15 @@ Opt = [{ext,{Packer,Unpacker}}],
 {ok, {ref, Ref}} = msgpack:unpack(msgpack:pack({ref, Ref}, Opt), Opt).
 ```
 
-This is still experimental feature, so I'm waiting for your feedback.
-
-## Compatibility mode
-
-To use as same with [old spec](https://github.com/msgpack/msgpack/blob/master/spec-old.md):
-
-```erlang
-OldHam = msgpack:pack(Spam, [{enable_str,false}]),
-{ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).
-```
-
-Since 0.2.3 now it's **false by default**.
-
-## Further tests
-
-See [msgpack-erlang-tests](http://github.com/kuenishi/msgpack-erlang-tests) for further tests
-
 ## License
 
 Apache License 2.0
 
 # Release Notes
+
+## 0.5.0
+
+- Renewed optional arguments to pack/unpack interface.
 
 ## 0.4.0
 
