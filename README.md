@@ -6,8 +6,8 @@
 
 ## Prerequisites for runtime
 
-[Erlang/OTP](http://erlang.org/), >= 17.0
-Also based on [the new msgpack spec 232a0d](https://github.com/msgpack/msgpack/blob/232a0d14c6057000cc4a478f0dfbb5942ac54e9e/spec.md).
+[Erlang/OTP](http://erlang.org/), >= 17.0 Also based on
+[the new msgpack spec 0b8f5a](https://github.com/msgpack/msgpack/blob/0b8f5ac67cdd130f4d4d4fe6afb839b989fdb86a/spec.md).
 
 ## edit rebar.config to use in your application
 
@@ -37,35 +37,67 @@ Ham = msgpack:pack(Spam),
 
 ### `{spec, new|old}`
 
-Both packing and unpacking.
+Both for packing and unpacking. Major difference between old and new spec is:
 
-[old spec](https://github.com/msgpack/msgpack/blob/master/spec-old.md):
+- raw family (`0xa0~0xbf`, `0xda`, `0xdb`) becomes new str family
+- `0xd9` is new as str8
+- new bin space (`0xc4, 0xc5, 0xc6` as bin8, bin16, bin32)
+- new ext space (`0xc7, 0xc8, 0xc9` as ext8, ext16, ext32)
+- new fixext space (`0xd4, 0xd5, 0xd6, 0xd7, 0xd8` as fixext1, fixext2, fixext4, fixext8, fixext16),
+
+The default is new spec. Old spec mode does not handle these new types but
+returns error. To use
+[old spec](https://github.com/msgpack/msgpack/blob/master/spec-old.md)
+mode, this option is explicitly added.
 
 ```erlang
-OldHam = msgpack:pack(Spam, [{enable_str,false}]),
-{ok, Spam} = msgpack:unpack(OldHam, [{enable_str,false}]).
+OldHam = msgpack:pack(Spam, [{spec, old}]),
+{ok, Spam} = msgpack:unpack(OldHam, [{spec, old}]).
 ```
 
 ### `{allow_atom, none|pack}`
 
-Only in packing
+Only in packing. Atoms are packed as binaries.
 
 ### `{known_atoms, [atom()]}`
 
-Both in packing and unpacking
+Both in packing and unpacking. In packing, if an atom is in this list
+a binary is encoded as a binary. In unpacking, msgpacked binaries are
+decoded as atoms with `erlang:binary_to_existing_atom/2` with encoding
+`utf8`.
 
-### `{str, as_binary|as_list|as_validated_list}`
+### `{str, as_binary|as_list}`
 
 Both in packing and unpacking. Only available at new spec.
 
-Now this supports string type!
+This option indicates str type family is treated as binary or list in
+Erlang world.
+
+```
+mode        as_binary    as_list
+-----------+------------+-------
+packing
+binary()    str          bin
+string()    bin*         str*
+list()      array        array
+-----------+------------+-------
+unpacking
+bin         string()     binary()
+str         binary()     string()
+```
+
+- (\*) fallback to list() handling if any error found
+
 
 ```erlang
 Opt = [{enable_str, true}]
 {ok, "埼玉"} = msgpack:unpack(msgpack:pack("埼玉", Opt), Opt).
  => {ok,[22524,29577]}
 ```
+### `{validate_string, boolean()}`
 
+Both in packing and unpacking. UTF-8 validation in encoding to str and
+decoding from str type will be enabled.
 
 ### `{map_format, maps|jiffy|jsx}`
 
@@ -103,7 +135,8 @@ Apache License 2.0
 
 ## 0.5.0
 
-- Renewed optional arguments to pack/unpack interface.
+- Renewed optional arguments to pack/unpack interface. This is
+  incompatible change from 0.4 series.
 
 ## 0.4.0
 
