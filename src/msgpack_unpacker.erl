@@ -82,9 +82,8 @@ unpack_stream(<<16#D3, V:64/big-signed-integer-unit:1, Rest/binary>>, _) ->
 unpack_stream(<<2#101:3, L:5, V:L/binary, Rest/binary>>, Opt) ->
     unpack_string_or_raw(V, Opt, Rest);
 
-unpack_stream(<<16#D9, L:8/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>,
-              ?OPTION{enable_str=true} = _Opt) ->
-    {unpack_string(V), Rest};
+unpack_stream(<<16#D9, L:8/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, Opt) ->
+    unpack_string_or_raw(V, Opt, Rest);
 
 unpack_stream(<<16#DA, L:16/big-unsigned-integer-unit:1, V:L/binary, Rest/binary>>, Opt) ->
     unpack_string_or_raw(V, Opt, Rest);
