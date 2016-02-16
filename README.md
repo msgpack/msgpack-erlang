@@ -37,7 +37,8 @@ Ham = msgpack:pack(Spam),
 
 ### `{spec, new|old}`
 
-Both for packing and unpacking. Major difference between old and new spec is:
+Both for packing and unpacking. Default is `new`. Major difference
+between old and new spec is:
 
 - raw family (`0xa0~0xbf`, `0xda`, `0xdb`) becomes new str family
 - `0xd9` is new as str8
@@ -57,18 +58,18 @@ OldHam = msgpack:pack(Spam, [{spec, old}]),
 
 ### `{allow_atom, none|pack}`
 
-Only in packing. Atoms are packed as binaries.
+Only in packing. Atoms are packed as binaries. Default value is `pack`.
 
 ### `{known_atoms, [atom()]}`
 
 Both in packing and unpacking. In packing, if an atom is in this list
 a binary is encoded as a binary. In unpacking, msgpacked binaries are
 decoded as atoms with `erlang:binary_to_existing_atom/2` with encoding
-`utf8`.
+`utf8`. Default value is an empty list.
 
 ### `{str, as_binary|as_list}`
 
-Both in packing and unpacking. Only available at new spec.
+Both in packing and unpacking. Only available at new spec. Default is `as_list`.
 
 This option indicates str type family is treated as binary or list in
 Erlang world.
@@ -97,11 +98,11 @@ Opt = [{enable_str, true}]
 ### `{validate_string, boolean()}`
 
 Both in packing and unpacking. UTF-8 validation in encoding to str and
-decoding from str type will be enabled.
+decoding from str type will be enabled. Default value is `true`.
 
 ### `{map_format, maps|jiffy|jsx}`
 
-Both at packing and unpacking.
+Both at packing and unpacking. Default value is `maps`.
 
 ```erlang
 msgpack:pack(#{ <<"key">> => <<"value">> }, []).
@@ -112,7 +113,8 @@ msgpack:pack([{<<"key">>, <<"value">>}], [{format, jsx}]).
 
 ### `{ext, {msgpack_ext_packer(), msgpack_ext_unpacker()}|module()}`
 
-At both.
+At both. The default behaviour in case of facing ext data at decoding
+is to ignore them as its length is known.
 
 Now msgpack-erlang supports ext type. Now you can serialize everything
 with your original (de)serializer. That will enable us to handle
