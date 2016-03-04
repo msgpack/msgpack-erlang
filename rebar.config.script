@@ -1,0 +1,10 @@
+case application:get_key(rebar, vsn) of
+  {ok, "3."++_} ->
+    PLUGINS = {plugins, [
+        {rebar3_eqc, ".*", {git, "https://github.com/kellymclaughlin/rebar3-eqc-plugin.git", {tag, "0.0.8"}}},
+        rebar3_hex
+    ]},
+    lists:keystore(plugins, 1, CONFIG, PLUGINS);
+  _ ->
+   CONFIG
+end.
