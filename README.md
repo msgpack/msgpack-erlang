@@ -18,6 +18,14 @@
 ]}.
 ```
 
+Or as it is [now published at hex.pm](https://hex.pm/packages/msgpack), just
+
+```erlang
+{deps, [msgpack]}.
+```
+
+might work.
+
 ## Simple deserialization
 
 ```erlang
@@ -67,38 +75,42 @@ a binary is encoded as a binary. In unpacking, msgpacked binaries are
 decoded as atoms with `erlang:binary_to_existing_atom/2` with encoding
 `utf8`. Default value is an empty list.
 
-### `{str, as_binary|as_list}`
+### `{unpack_str, as_binary|as_list}`
 
-Both in packing and unpacking. Only available at new spec. Default is `as_list`.
-
-This option indicates str type family is treated as binary or list in
-Erlang world.
+A switch to choose decoded term style of `str` type when *unpacking*.
+Only available at new spec. Default is `as_list`.
 
 ```
 mode        as_binary    as_list
 -----------+------------+-------
-packing
-binary()    str          bin
-string()    bin*         str*
-list()      array        array
------------+------------+-------
-unpacking
-bin         string()     binary()
+bin         binary()     binary()
 str         binary()     string()
 ```
 
-- (\*) fallback to list() handling if any error found
-
-
-```erlang
-Opt = [{enable_str, true}]
-{ok, "埼玉"} = msgpack:unpack(msgpack:pack("埼玉", Opt), Opt).
- => {ok,[22524,29577]}
-```
 ### `{validate_string, boolean()}`
 
-Both in packing and unpacking. UTF-8 validation in encoding to str and
-decoding from str type will be enabled. Default value is `true`.
+Only in unpacking, UTF-8 validation at unpacking from `str` type will
+be enabled. Default value is `false`.
+
+### `{pack_str, from_binary|from_list|none}`
+
+A switch to choose packing of `string()` when packing. Only available
+at new spec. Default is `from_list` for symmetry with `unpack_str`
+option.
+
+```
+mode        from_list    from_binary    none
+-----------+------------+--------------+-----------------
+binary()    bin          str*/bin       bin
+string()    str*/array   array of int   array of int
+list()      array        array          array
+```
+
+But the default option pays the cost of performance for symmetry. If
+the overhead of UTF-8 validation is unacceptable, choosing `none` as
+the option would be the best.
+
+- \* Tries to pack as `str` if it is a valid `string()`.
 
 ### `{map_format, maps|jiffy|jsx}`
 
