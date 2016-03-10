@@ -1,9 +1,0 @@
-case application:get_key(rebar, vsn) of
-  {ok, "2."++_V} ->
-   %% Workarounds for rebar2 here
-   {plugins, Plugins} = lists:keyfind(plugins, 1, CONFIG),
-   NewPlugins = lists:delete(rebar3_eqc, Plugins),
-   lists:keyreplace(plugins, 1, CONFIG, {plugins, NewPlugins});
-  _ ->
-   CONFIG
-end.

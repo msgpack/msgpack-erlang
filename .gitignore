@@ -6,3 +6,4 @@ deps
 *.so
 _build
 .rebar3
+.rebar

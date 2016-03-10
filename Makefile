@@ -17,7 +17,7 @@ xref:
 	@$(REBAR) xref
 
 test:
-	@$(REBAR) eunit
+	@$(REBAR) as test eunit eqc
 
 clean:
 	@$(REBAR) clean
@@ -25,10 +25,7 @@ clean:
 dialyzer:
 	@$(REBAR) dialyzer
 
-check-all:
-	@$(REBAR) eunit
-	@$(REBAR) xref
-	@$(REBAR) dialyzer
+check-all: test xref dialyzer
 
 crosslang:
 	@echo "do ERL_LIBS=../ before you make crosslang or fail"
