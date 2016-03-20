@@ -67,6 +67,7 @@ OldHam = msgpack:pack(Spam, [{spec, old}]),
 ### `{allow_atom, none|pack}`
 
 Only in packing. Atoms are packed as binaries. Default value is `pack`.
+Otherwise, any term including atoms throws badarg.
 
 ### `{known_atoms, [atom()]}`
 
@@ -74,6 +75,8 @@ Both in packing and unpacking. In packing, if an atom is in this list
 a binary is encoded as a binary. In unpacking, msgpacked binaries are
 decoded as atoms with `erlang:binary_to_existing_atom/2` with encoding
 `utf8`. Default value is an empty list.
+
+Even if `allow_atom` is `none`, known atoms are packed.
 
 ### `{unpack_str, as_binary|as_list}`
 

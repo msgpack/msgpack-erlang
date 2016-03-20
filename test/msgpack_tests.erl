@@ -23,8 +23,6 @@
 
 -include_lib("eunit/include/eunit.hrl").
 
--include("msgpack.hrl").
-
 test_data() ->
     [true, false, null,
      0, 1, 2, 123, 512, 1230, 678908, 16#FFFFFFFFFF,
@@ -66,11 +64,11 @@ port_receive(Port, Acc) ->
 
 port_map_test()->
     Tests = test_data_map(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{format,map}]), [{format,map}])),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{map_format,map}]), [{map_format,map}])),
 
 port_jiffy_test()->
     Tests = test_data_jiffy(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{format,jiffy}]), [{format,jiffy}])),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{map_format,jiffy}]), [{map_format,jiffy}])),
 
                                                 %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
                                                 %    true = port_command(Port, msgpack:pack(Tests)),
@@ -81,7 +79,7 @@ port_jiffy_test()->
 
 port_jsx_test()->
     Tests = test_data_jsx(),
-    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{format,jsx}]), [{format,jsx}])),
+    ?assertEqual({[Tests],<<>>}, msgpack:unpack(msgpack:pack([Tests], [{map_format,jsx}]), [{map_format,jsx}])),
 
                                                 %    Port = open_port({spawn, "ruby ../test/crosslang.rb"}, [binary, eof]),
                                                 %    true = port_command(Port, msgpack:pack(Tests)),
@@ -116,14 +114,14 @@ issue_jsx_5_test() ->
                         ]
             }
            ],
-    Encoded = msgpack:pack(Term, [{format,jsx}, {enable_str,true}]),
+    Encoded = msgpack:pack(Term, [{map_format,jsx}, {spec,new}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
 
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [{format,jsx}, {enable_str,true}]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [{map_format,jsx}, {spec,new}]),
     ?assertEqual(Term, Decoded).
 
 
@@ -136,13 +134,13 @@ issue_jiffy_5_test() ->
                          ]
              }
             ]},
-    Encoded = msgpack:pack(Term, [{format,jiffy}, {enable_str,true}]),
+    Encoded = msgpack:pack(Term, [{map_format,jiffy}, {spec,new}]),
     Bin0 = <<130,196,4,116,121,112,101,196,7,119,111,114,107,101,114,115,
              196,4,100,97,116,97,145,130,196,8,119,111,114,107,101,114,105,100,
              196,5,115,116,100,46,49,196,5,115,108,111,116,115,160>>,
     ?assertEqual(Bin0, Encoded),
 
-    {ok, Decoded} = msgpack:unpack(Bin0, [{format,jiffy}, {enable_str,true}]),
+    {ok, Decoded} = msgpack:unpack(Bin0, [{map_format,jiffy}, {spec,new}]),
     ?assertEqual(Term, Decoded).
 
 
@@ -150,16 +148,16 @@ issue_27_test_() ->
     [
      %% null(jiffy) => null(msgpack) => null(jsx)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jsx}])),
+                   msgpack:unpack(msgpack:pack(null, [{map_format,jiffy}]), [{map_format,jsx}])),
 
      %% null(jiffy) => null(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jiffy}]), [{format,jiffy}])),
+                   msgpack:unpack(msgpack:pack(null, [{map_format,jiffy}]), [{map_format,jiffy}])),
 
 
      %% null(jsx) => null(msgpack) => null(jiffy)
      ?_assertEqual({ok, null},
-                   msgpack:unpack(msgpack:pack(null, [{format,jsx}]), [{format,jiffy}]))].
+                   msgpack:unpack(msgpack:pack(null, [{map_format,jsx}]), [{map_format,jiffy}]))].
 
 string_test() ->
     {ok, CWD} = file:get_cwd(),
@@ -174,14 +172,14 @@ default_test_() ->
     [
      {"pack",
       fun() ->
-              Map = {[{1,2}]},
-              ?assertEqual(pack(Map, [{format, ?DEFAULT_MAP_FORMAT}]), pack(Map))
+              Map = #{1=>2},
+              ?assertEqual(pack(Map, [{map_format, map}]), pack(Map))
       end},
      {"unpack",
       fun() ->
               Map = {[{1,2}]},
-              Binary = pack(Map, [{format, ?DEFAULT_MAP_FORMAT}]),
-              ?assertEqual(unpack(Binary, [{format, ?DEFAULT_MAP_FORMAT}]), unpack(Binary))
+              Binary = pack(Map, [{map_format, map}]),
+              ?assertEqual(unpack(Binary, [{map_format, map}]), unpack(Binary))
       end}
     ].
 
@@ -222,39 +220,39 @@ array_test_()->
 -ifndef(without_map).
 map_test_()->
     [
-     {"maps <=> jsx",
+     {"map <=> jsx",
       fun() ->
               JSXMap = [ {X, X * 2} || X <- lists:seq(0, 16) ],
-              BinaryJSX = pack(JSXMap, [{format,jsx}]),
+              BinaryJSX = pack(JSXMap, [{map_format,jsx}]),
               Map = maps:from_list(JSXMap),
-              Binary = pack(Map, [{format,map}]),
+              Binary = pack(Map, [{map_format,map}]),
               ?assertEqual(BinaryJSX, Binary)
       end},
 
-     {"pack map without {format,map}",
+     {"pack map without {map_format,map}",
       fun() ->
 	      Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16) ]),
 	      Binary = pack(Map),
-	      ?assertEqual({ok,Map}, unpack(Binary, [{format,map}]))
+	      ?assertEqual({ok,Map}, unpack(Binary, [{map_format,map}]))
       end},
 
      {"map length 16",
       fun() ->
               Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16) ]),
-              Binary = pack(Map, [{format,map}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,map}]))
+              Binary = pack(Map, [{map_format,map}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,map}]))
       end},
      {"map length 32",
       fun() ->
               Map = maps:from_list([ {X, X * 2} || X <- lists:seq(0, 16#010000) ]),
-              Binary = pack(Map, [{format,map}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,map}]))
+              Binary = pack(Map, [{map_format,map}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,map}]))
       end},
      {"map empty",
       fun() ->
               EmptyMap = maps:new(),
-              Binary = pack(EmptyMap, [{format,map}]),
-              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,map}]))
+              Binary = pack(EmptyMap, [{map_format,map}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{map_format,map}]))
       end}].
 -endif.
 
@@ -263,38 +261,38 @@ jiffy_jsx_test_() ->
     [{"jiffy length 16",
       fun() ->
               Map = {[ {X, X * 2} || X <- lists:seq(0, 16) ]},
-              Binary = pack(Map, [{format,jiffy}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,jiffy}]))
+              Binary = pack(Map, [{map_format,jiffy}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,jiffy}]))
       end},
      {"jiffy length 32",
       fun() ->
               Map = {[ {X, X * 2} || X <- lists:seq(0, 16#010000) ]},
-              Binary = pack(Map, [{format,jiffy}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,jiffy}]))
+              Binary = pack(Map, [{map_format,jiffy}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,jiffy}]))
       end},
      {"jiffy empty",
       fun() ->
               EmptyMap = {[]},
-              Binary = pack(EmptyMap, [{format,jiffy}]),
-              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,jiffy}]))
+              Binary = pack(EmptyMap, [{map_format,jiffy}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{map_format,jiffy}]))
       end},
      {"jsx length 16",
       fun() ->
               Map = [ {X, X * 2} || X <- lists:seq(0, 16) ],
-              Binary = pack(Map, [{format,jsx}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,jsx}]))
+              Binary = pack(Map, [{map_format,jsx}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,jsx}]))
       end},
      {"jsx length 32",
       fun() ->
               Map = [ {X, X * 2} || X <- lists:seq(0, 16#010000) ],
-              Binary = pack(Map, [{format,jsx}]),
-              ?assertEqual({ok, Map}, unpack(Binary, [{format,jsx}]))
+              Binary = pack(Map, [{map_format,jsx}]),
+              ?assertEqual({ok, Map}, unpack(Binary, [{map_format,jsx}]))
       end},
      {"jsx empty",
       fun() ->
               EmptyMap = [{}],
-              Binary = pack(EmptyMap, [{format,jsx}]),
-              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{format,jsx}]))
+              Binary = pack(EmptyMap, [{map_format,jsx}]),
+              ?assertEqual({ok, EmptyMap}, unpack(Binary, [{map_format,jsx}]))
       end}
     ].
 
@@ -361,12 +359,12 @@ error_test_()->
     [
      {"badarg atom",
       ?_assertEqual({error, {badarg, atom}},
-                    pack(atom))},
+                    pack(atom, [{allow_atom, none}]))},
      {"badarg tuple",
       fun() ->
               Term = {"hoge", "hage", atom},
               ?assertEqual({error, {badarg, Term}},
-                           pack(Term))
+                           pack(Term, [{allow_atom, none}]))
       end},
      {"badarg too big int",
       ?_assertEqual({error, {badarg, -16#8000000000000001}},
@@ -402,14 +400,14 @@ binary_test_() ->
 
 benchmark0_test()->
     Data=[test_data_jiffy() || _ <- lists:seq(0, ?CNT)],
-    S=?debugTime("  serialize", msgpack:pack(Data, [{format, jiffy}])),
-    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{format, jiffy}])),
+    S=?debugTime("  serialize", msgpack:pack(Data, [{map_format, jiffy}])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{map_format, jiffy}])),
     ?debugFmt("for ~p KB test data(jiffy).", [byte_size(S) div 1024]).
 
 benchmark1_test()->
     Data=[test_data_jsx() || _ <- lists:seq(0, ?CNT)],
-    S=?debugTime("  serialize", msgpack:pack(Data, [{format, jsx}])),
-    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{format, jsx}])),
+    S=?debugTime("  serialize", msgpack:pack(Data, [{map_format, jsx}])),
+    {ok, Data}=?debugTime("deserialize", msgpack:unpack(S, [{map_format, jsx}])),
     ?debugFmt("for ~p KB test data(jsx).", [byte_size(S) div 1024]).
 
 benchmark2_test()->
@@ -463,19 +461,19 @@ benchmark_p0_test_() ->
       ?_assertEqual(ok,
                     multirunner("jiffy",
                                 fun(Data) ->
-                                        msgpack:pack(Data, [{format, jiffy}])
+                                        msgpack:pack(Data, [{map_format, jiffy}])
                                 end,
                                 fun(Data) ->
-                                        msgpack:unpack(Data, [{format, jiffy}])
+                                        msgpack:unpack(Data, [{map_format, jiffy}])
                                 end))},
      {timeout, 600,
       ?_assertEqual(ok,
                     multirunner("jsx",
                                 fun(Data) ->
-                                        msgpack:pack(Data, [{format, jsx}])
+                                        msgpack:pack(Data, [{map_format, jsx}])
                                 end,
                                 fun(Data) ->
-                                        msgpack:unpack(Data, [{format, jsx}])
+                                        msgpack:unpack(Data, [{map_format, jsx}])
                                 end))},
      {timeout, 600,
       ?_assertEqual(ok,

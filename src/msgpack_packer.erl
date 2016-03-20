@@ -24,8 +24,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% pack them all
--spec pack(msgpack:object(), msgpack_option()) -> binary().
-
+-spec pack(msgpack:object(), ?OPTION{}) -> binary().
 pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
 pack(I, _) when is_integer(I) ->
@@ -43,19 +42,26 @@ pack(Bin, Opt) when is_binary(Bin) ->
     handle_binary(Bin, Opt);
 
 pack(Atom, ?OPTION{allow_atom=pack} = Opt) when is_atom(Atom) ->
-    pack(erlang:atom_to_binary(Atom, unicode), Opt);
+    handle_binary(erlang:atom_to_binary(Atom, utf8), Opt);
+pack(Atom, ?OPTION{known_atoms=Atoms} = Opt) when is_atom(Atom) ->
+    case lists:member(Atom, Atoms) of
+        true ->
+            handle_binary(erlang:atom_to_binary(Atom, utf8), Opt);
+        false ->
+            handle_ext(Atom, Opt)
+    end;
 
 %% jiffy interface
-pack({Map}, Opt = ?OPTION{interface=jiffy}) when is_list(Map) ->
+pack({Map}, Opt = ?OPTION{map_format=jiffy}) when is_list(Map) ->
     pack_map(Map, Opt);
 
 %% jsx interface
-pack(Map, Opt = ?OPTION{interface=jsx}) when Map =:= [{}]->
+pack(Map, Opt = ?OPTION{map_format=jsx}) when Map =:= [{}]->
     pack_map([], Opt);
-pack([{_,_}|_] = Map, Opt = ?OPTION{interface=jsx}) ->
+pack([{_,_}|_] = Map, Opt = ?OPTION{map_format=jsx}) ->
     pack_map(Map, Opt);
 
-pack(List, ?OPTION{enable_str=true}=Opt)  when is_list(List) ->
+pack(List, ?OPTION{spec=new, pack_str=from_list}=Opt)  when is_list(List) ->
     try
         case lists:all(fun is_integer/1, List) of
             true ->
@@ -80,14 +86,14 @@ pack(List, Opt)  when is_list(List) ->
 pack(Other, Opt) ->
     handle_ext(Other, Opt).
 
-handle_binary(Bin, Opt) ->
-    case Opt of
-        #options_v3{enable_str=true} = Opt -> pack_raw2(Bin);
-        #options_v3{enable_str=false} = Opt -> pack_raw(Bin);
-        #options_v2{enable_str=true} = Opt -> pack_raw2(Bin);
-        #options_v2{enable_str=false} = Opt -> pack_raw(Bin);
-        #options_v1{} = Opt -> pack_raw(Bin)
-    end.
+handle_binary(Bin, ?OPTION{spec=old}) ->
+    pack_raw(Bin);
+handle_binary(Bin, ?OPTION{spec=new, pack_str=from_list}) ->
+    pack_raw2(Bin);
+handle_binary(Bin, ?OPTION{spec=new, pack_str=from_binary} = Opt) ->
+    pack_string(unicode:characters_to_list(Bin), Opt);
+handle_binary(Bin, ?OPTION{spec=new}) ->
+    pack_raw2(Bin).
 
 %% %% map interface
 handle_ext(Map, Opt) when is_map(Map) ->
@@ -187,7 +193,7 @@ pack_raw2(Bin) ->
 %% @doc String MAY be unicode. Or may be EUC-JP, SJIS, UTF-1024 or anything.
 %% EVERY implementation must show its binary length just after type indicator
 %% to skip the damn string if its unreadable.
--spec pack_string(list(), msgpack_option()) -> binary() | {error, atom()}.
+-spec pack_string(list(), ?OPTION{}) -> binary() | {error, atom()}.
 pack_string(String, _Opt) ->
     case unicode:characters_to_binary(String) of
         {error, _Bin, _} -> {error, broken_unicode};
@@ -207,7 +213,7 @@ pack_string(String, _Opt) ->
             end
     end.
 
--spec pack_array([msgpack:object()], msgpack_option()) -> binary() | no_return().
+-spec pack_array([msgpack:object()], ?OPTION{}) -> binary() | no_return().
 pack_array([], _) ->
     << 2#1001:4, 0:4/integer-unit:1 >>;
 
@@ -299,7 +305,7 @@ pack_array(L, Opt) ->
             throw({badarg, L})
     end.
 
--spec pack_map(msgpack:msgpack_map(), msgpack_option()) -> binary() | no_return().
+-spec pack_map(msgpack:msgpack_map(), ?OPTION{}) -> binary() | no_return().
 pack_map([{Ka, Va}], Opt)->
     << 2#1000:4, 1:4/integer-unit:1,
        (pack(Ka, Opt))/binary, (pack(Va, Opt))/binary >>;
@@ -337,7 +343,7 @@ pack_map(M, Opt)->
             throw({badarg, M})
     end.
 
--spec pack_ext(any(), msgpack_ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
+-spec pack_ext(any(), msgpack:ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
 pack_ext(Any, Packer, Opt) ->
     case Packer(Any, Opt) of
         {ok, {Type, Data}} when -16#80 =< Type andalso Type =< 16#7F ->
