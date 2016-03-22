@@ -470,27 +470,39 @@ benchmark_p0_test_() ->
                                 fun erlang:term_to_binary/1,
                                 fun erlang:binary_to_term/1))}].
 
-new_options_test_() ->
+%% New options test
+old_spec_test_() ->
     OldSpecOpt = [{spec, old}],
     [
      {"old spec",
       [?_assertEqual(<<161,1>>, msgpack:pack(<<1>>, OldSpecOpt)),
        ?_assertEqual(<<162,1,2>>, msgpack:pack(<<1,2>>, OldSpecOpt)),
        ?_assertMatch(<<191, _:31/binary >>,
-                     msgpack:pack(binary:copy(<<1>>, 31), OldSpecOpt)),
+                     msgpack:pack(binary_a(31), OldSpecOpt)),
        ?_assertMatch(<<218, 0, 32, _:32/binary >>,
-                     msgpack:pack(binary:copy(<<1>>, 32), OldSpecOpt)),
+                     msgpack:pack(binary_a(32), OldSpecOpt)),
        ?_assertMatch(<<218, 255, 255, _:65535/binary >>,
-                     msgpack:pack(binary:copy(<<1>>, 65535), OldSpecOpt)),
+                     msgpack:pack(binary_a(65535), OldSpecOpt)),
        ?_assertMatch(<<219, 0, 1, 0, 0, _:65536/binary >>,
-                     msgpack:pack(binary:copy(<<1>>, 65536), OldSpecOpt))
-      ]},
+                     msgpack:pack(binary_a(65536), OldSpecOpt))
+      ]}
      %% {"Decoding new spec binary with old spec",
      %%  [?_assertEqual({error, {badarg, {new_spec, Code}}},
      %%                 msgpack:unpack(<<Code, 0, 0, 0, 42>>, OldSpecOpt))
      %%   || Code <- [16#D4, 16#D5, 16#D6, 16#D7, 16#D8, 16#C7, 16#C8, 16#C9,
-     %%               16#C4, 16#C5, 16#C6] ]},
-     {"allow_atom none/pack",
+     %%               16#C4, 16#C5, 16#C6] ]}
+     ].
+
+list_a(Len) ->
+    [$a||_<-lists:seq(1,Len)].
+list_minus_one(Len) ->
+    [-1||_<-lists:seq(1,Len)].
+
+binary_a(Len) ->
+    binary:copy(<<$a>>, Len).
+
+new_spec_pack_test_() ->
+    [{"allow_atom none/pack",
       [?_assertEqual(<<196,4,97,116,111,109>>,
                      msgpack:pack(atom, [{allow_atom, pack}])),
        ?_assertEqual({error, {badarg, atom}},
@@ -503,27 +515,100 @@ new_options_test_() ->
       [?_assertEqual(<<196,4,97,116,111,109>>,
                      msgpack:pack(atom, [{known_atoms, [atom]},
                                          {allow_atom, none}]))]},
-     {"pack_str, on binary()",
-      [?_assertEqual(<<196,3,97,97,97>>,
-                     msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,from_list}])),
-       %% ?_assertEqual(<<16#D9,3,97,97,97>>, Not passing
-       %%               msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,from_binary}])),
-       ?_assertEqual(<<196,3,97,97,97>>,
-                     msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,none}]))
+     {"pack_str, on binary(), from_list and none",
+      [[?_assertEqual(<<16#C4, 3, 97,97,97>>,
+                     msgpack:pack(binary_a(3), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#C4, 255, _:255/binary>>,
+                      msgpack:pack(binary_a(255), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#C5, 1, 0, _:256/binary>>,
+                      msgpack:pack(binary_a(256), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#C5, 255,255, _:65535/binary>>,
+                      msgpack:pack(binary_a(65535), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#C6, 0, 1, 0, 0, _:65536/binary>>,
+                      msgpack:pack(binary_a(65536), [{spec,new},{pack_str,PackStr}]))]
+       || PackStr <- [from_list, none]]},
+     {"pack_str on binary(), from_binary",
+      [?_assertMatch(<<2#101:3, 31:5, _:31/binary>>,
+                     msgpack:pack(binary_a(31), [{spec,new},{pack_str,from_binary}])),
+       ?_assertMatch(<<16#D9,32,_:32/binary>>,
+                     msgpack:pack(binary_a(32), [{spec,new},{pack_str,from_binary}])),
+       ?_assertMatch(<<16#D9,255,_:255/binary>>,
+                     msgpack:pack(binary_a(255), [{spec,new},{pack_str,from_binary}])),
+       ?_assertMatch(<<16#DA,1,0,_:256/binary>>,
+                     msgpack:pack(binary_a(256), [{spec,new},{pack_str,from_binary}])),
+       ?_assertMatch(<<16#DA,255,255,_:65535/binary>>,
+                     msgpack:pack(binary_a(65535), [{spec,new},{pack_str,from_binary}])),
+       ?_assertMatch(<<16#DB,0,1,0,0,_:65536/binary>>,
+                     msgpack:pack(binary_a(65536), [{spec,new},{pack_str,from_binary}]))
       ]},
-     {"pack_str, on string()",
-      %% [?_assertEqual(<<196,3,97,97,97>>,
-      %%                msgpack:pack("aaa", [{spec,new},{pack_str,from_list}])),
-      %% ?_assertEqual(<<16#D9,3,97,97,97>>, Not passing
-      %%               msgpack:pack("aaa", [{spec,new},{pack_str,from_binary}])),
-      %% ?_assertEqual(<<196,3,97,97,97>>,
-      %%               msgpack:pack("aaa", [{spec,new},{pack_str,none}]))
-      []},
-     {"unpack_str, as_binary",
+     {"pack_str, on string(), from_list, from_binary, none",
+      %% from_list => str
+      [?_assertEqual(<<2#101:3, 3:5, 97,97,97>>,
+                     msgpack:pack("aaa", [{spec,new},{pack_str,from_list}])),
+       ?_assertMatch(<<16#D9, 32, _:32/binary>>,
+                     msgpack:pack(list_a(32), [{spec,new},{pack_str,from_list}])),
+       ?_assertMatch(<<16#DA, 1, 0, _:256/binary>>,
+                     msgpack:pack(list_a(256), [{spec,new},{pack_str,from_list}])),
+       ?_assertMatch(<<16#DB, 0, 1, 0, 0, _:65536/binary>>,
+                     msgpack:pack(list_a(65536), [{spec,new},{pack_str,from_list}])),
+       %% string() from_binary/none => array of int
+       [[?_assertEqual(<<2#1001:4, 3:4, "aaa">>,
+                     msgpack:pack("aaa", [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#DC, 1, 0, _:256/binary>>,
+                      msgpack:pack(list_a(256), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#DD, 0, 1, 0, 0, _:65536/binary>>,
+                      msgpack:pack(list_a(65536), [{spec,new},{pack_str,PackStr}]))]
+        || PackStr <- [from_binary, none]]
+      ]},
+     {"pack_str, on list(), from_list, from_binary, none",
+      [[?_assertEqual(<<2#1001:4, 3:4, 255,255,255>>,        %% 1001XXXX, up to 15 elements
+                      msgpack:pack(list_minus_one(3), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#DC, 1, 0, _:256/binary>>,       %% 0xDC, two bytes, N objects
+                      msgpack:pack(list_minus_one(256), [{spec,new},{pack_str,PackStr}])),
+        ?_assertMatch(<<16#DD, 0, 1, 0, 0, _:65536/binary>>,       %% 0xDD, four bytes, N objects
+                      msgpack:pack(list_minus_one(65536), [{spec,new},{pack_str,PackStr}]))]
+       || PackStr <- [from_list, from_binary, none]]
+     }].
+
+new_spec_unpack_test_() ->
+    [{"unpack_str, on bin",
       [
+       %% mode        as_binary    as_list
+       %% -----------+------------+-------
+       %% bin         binary()     binary()
+       [?_assertEqual({ok, <<"aaa">>},
+                      msgpack:unpack(<<16#C4, 3, "aaa">>, [{spec,new},{unpack_str,UnpackStr}])),
+        ?_assertEqual({ok, binary_a(256)},
+                      msgpack:unpack(<<16#C5, 1,0, (binary_a(256))/binary>>, [{spec,new},{unpack_str,UnpackStr}])),
+        ?_assertEqual({ok, binary_a(65536)},
+                      msgpack:unpack(<<16#C6, 0,1,0,0, (binary_a(65536))/binary>>, [{spec,new},{unpack_str,UnpackStr}]))]
+       || UnpackStr <- [as_binary, as_list]
       ]},
-     {"unpack_str, as_list", []},
-     {"validate_string, false",
+     {"unpack_str, on str",
+      %% str         binary()     string()
+      [ %% as_binary
+       ?_assertEqual({ok, <<"aaa">>},
+                     msgpack:unpack(<<2#101:3, 3:5, 97,97,97>>, [{spec,new},{unpack_str,as_binary}])),
+       ?_assertEqual({ok, binary_a(32)},
+                     msgpack:unpack(<<16#D9, 32, (binary_a(32))/binary>>, [{spec,new},{unpack_str,as_binary}])),
+       ?_assertEqual({ok, binary_a(256)},
+                     msgpack:unpack(<<16#DA, 1,0, (binary_a(256))/binary>>, [{spec,new},{unpack_str,as_binary}])),
+       ?_assertEqual({ok, binary_a(65536)},
+                     msgpack:unpack(<<16#DB, 0,1,0,0, (binary_a(65536))/binary>>, [{spec,new},{unpack_str,as_binary}])),
+        %% as_list => string
+       ?_assertEqual({ok, "aaa"},
+                     msgpack:unpack(<<2#101:3, 3:5, 97,97,97>>, [{spec,new},{unpack_str,as_list}])),
+       ?_assertEqual({ok, list_a(32)},
+                     msgpack:unpack(<<16#D9, 32, (binary_a(32))/binary>>, [{spec,new},{unpack_str,as_list}])),
+       ?_assertEqual({ok, list_a(256)},
+                     msgpack:unpack(<<16#DA, 1,0, (binary_a(256))/binary>>, [{spec,new},{unpack_str,as_list}])),
+       ?_assertEqual({ok, list_a(65536)},
+                     msgpack:unpack(<<16#DB, 0,1,0,0, (binary_a(65536))/binary>>, [{spec,new},{unpack_str,as_list}]))
+      ]}].
+
+unpack_str_validation_test_() ->
+    [{"validate_string false, on unpacking",
       []},
-     {"validate_string, true", []}
+     {"validate_string true, on unpacking",
+      []}
     ].

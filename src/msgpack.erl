@@ -165,7 +165,7 @@ parse_options([{unpack_str, As}|T], Opt0) when As =:= as_binary orelse As =:= as
 parse_options([{pack_str, From}|T], Opt)
   when From =:= from_binary orelse From =:= from_list orelse From =:= none ->
     %% TODO Choose function here
-    parse_options(T, Opt);
+    parse_options(T, Opt?OPTION{pack_str=From});
 
 parse_options([{map_format,Type}|T], Opt0)
   when Type =:= jsx; Type =:= jiffy; Type =:= map ->

@@ -153,17 +153,14 @@ pack_uint(N) ->
     throw({badarg, N}).
 
 
+%% @doc float : erlang's float is always IEEE 754 64bit format. Thus it
+%% never generates << 16#CA:8, F:32/big-float-unit:1 >>.
 -spec pack_double(float()) -> binary().
-%% float : erlang's float is always IEEE 754 64bit format.
-%% pack_float(F) when is_float(F)->
-%%    << 16#CA:8, F:32/big-float-unit:1 >>.
-%%    pack_double(F).
-%% double
 pack_double(F) ->
     << 16#CB:8, F:64/big-float-unit:1 >>.
 
+%% @doc raw bytes in old spec
 -spec pack_raw(binary()) -> binary().
-%% raw bytes in old spec
 pack_raw(Bin) ->
     case byte_size(Bin) of
         Len when Len < 32->
@@ -180,7 +177,7 @@ pack_raw(Bin) ->
 %% raw bytes in new spec
 pack_raw2(Bin) ->
     case byte_size(Bin) of
-        Len when Len < 32->
+        Len when Len < 256->
             << 16#C4:8, Len:8/big-unsigned-integer-unit:1, Bin/binary>>;
         Len when Len < 16#10000 -> % 65536
             << 16#C5:8, Len:16/big-unsigned-integer-unit:1, Bin/binary >>;
