@@ -120,45 +120,46 @@ unpack_stream(<<16#C1, _R/binary>>, _) ->  throw({badarg, 16#C1});
 
 %% fixext 1 stores an integer and a byte array whose length is 1 byte
 unpack_stream(<<16#D4, T:1/signed-integer-unit:8, Data:1/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#D4, Unpack, T, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#D4, Unpack, T, Data, Rest, Orig, Opt);
 
 %% fixext 2 stores an integer and a byte array whose length is 2 bytes
 unpack_stream(<<16#D5, T:1/signed-integer-unit:8, Data:2/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#D5, Unpack, T, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#D5, Unpack, T, Data, Rest, Orig, Opt);
 
 %% fixext 4 stores an integer and a byte array whose length is 4 bytes
 unpack_stream(<<16#D6, T:1/signed-integer-unit:8, Data:4/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#D6, Unpack, T, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#D6, Unpack, T, Data, Rest, Orig, Opt);
 
 %% fixext 8 stores an integer and a byte array whose length is 8 bytes
 unpack_stream(<<16#D7, T:1/signed-integer-unit:8, Data:8/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#D7, Unpack, T, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#D7, Unpack, T, Data, Rest, Orig, Opt);
 
 %% fixext 16 stores an integer and a byte array whose length is 16 bytes
 unpack_stream(<<16#D8, T:1/signed-integer-unit:8, Data:16/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#D8, Unpack, T, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#D8, Unpack, T, Data, Rest, Orig, Opt);
 
 %% ext 8 stores an integer and a byte array whose length is upto (2^8)-1 bytes:
 unpack_stream(<<16#C7, Len:8, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#C7, Unpack, Type, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#C7, Unpack, Type, Data, Rest, Orig, Opt);
 
 %% ext 16 stores an integer and a byte array whose length is upto (2^16)-1 bytes:
 unpack_stream(<<16#C8, Len:16, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt) ->
-    maybe_unpack_ext(16#C8, Unpack, Type, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt) ->
+    maybe_unpack_ext(16#C8, Unpack, Type, Data, Rest, Orig, Opt);
 
 %% ext 32 stores an integer and a byte array whose length is upto (2^32)-1 bytes:
 unpack_stream(<<16#C9, Len:32, Type:1/signed-integer-unit:8, Data:Len/binary, Rest/binary>>,
-              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = _Opt)  ->
-    maybe_unpack_ext(16#C9, Unpack, Type, Data, Rest, Orig);
+              ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt)  ->
+    maybe_unpack_ext(16#C9, Unpack, Type, Data, Rest, Orig, Opt);
 
-unpack_stream(_Bin, _) -> throw(incomplete).
+unpack_stream(_Bin, _Opt) ->
+    throw(incomplete).
 
 -spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], ?OPTION{}) ->
                           {[msgpack:object()], binary()} | no_return().
@@ -234,13 +235,19 @@ unpack_str(Binary) ->
         String -> String
     end.
 
-maybe_unpack_ext(F, undefined, _, _, _Rest, _) -> throw({badarg, {bad_ext, F}});
-maybe_unpack_ext(_, Unpack, Type, Data, Rest, Orig) when is_function(Unpack, 3) ->
+maybe_unpack_ext(F, _, _, _, _Rest, _, ?OPTION{spec=old}) ->
+    %% trying to unpack new ext formats with old unpacker
+    throw({badarg, {new_spec, F}});
+maybe_unpack_ext(F, undefined, _, _, _Rest, _, _) ->
+    throw({badarg, {bad_ext, F}});
+maybe_unpack_ext(_, Unpack, Type, Data, Rest, Orig, _)
+  when is_function(Unpack, 3) ->
     case Unpack(Type, Data, Orig) of
         {ok, Term} -> {Term, Rest};
         {error, E} -> {error, E}
     end;
-maybe_unpack_ext(_, Unpack, Type, Data, Rest, _) when is_function(Unpack, 2) ->
+maybe_unpack_ext(_, Unpack, Type, Data, Rest, _, _)
+  when is_function(Unpack, 2) ->
     case Unpack(Type, Data) of
         {ok, Term} -> {Term, Rest};
         {error, E} -> {error, E}

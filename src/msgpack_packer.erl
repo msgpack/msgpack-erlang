@@ -83,7 +83,7 @@ pack(List, ?OPTION{spec=new, pack_str=from_list}=Opt)  when is_list(List) ->
 pack(List, Opt)  when is_list(List) ->
     pack_array(List, Opt);
 
-pack(Other, Opt) ->
+pack(Other, ?OPTION{spec=new} = Opt) ->
     handle_ext(Other, Opt).
 
 handle_binary(Bin, ?OPTION{spec=old}) ->

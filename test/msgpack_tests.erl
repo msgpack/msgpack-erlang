@@ -15,7 +15,6 @@
 %%    See the License for the specific language governing permissions and
 %%    limitations under the License.
 %%
-%% Created : 26 Apr 2011 by UENISHI Kota <uenishi.kota@lab.ntt.co.jp>
 
 -module(msgpack_tests).
 
@@ -217,7 +216,6 @@ array_test_()->
       end}
     ].
 
--ifndef(without_map).
 map_test_()->
     [
      {"map <=> jsx",
@@ -254,8 +252,6 @@ map_test_()->
               Binary = pack(EmptyMap, [{map_format,map}]),
               ?assertEqual({ok, EmptyMap}, unpack(Binary, [{map_format,map}]))
       end}].
--endif.
-
 
 jiffy_jsx_test_() ->
     [{"jiffy length 16",
@@ -383,18 +379,6 @@ binary_test_() ->
       end}
     ].
 
-%% long_binary_test_()->
-%%     [
-%%         {"long binary",
-%%             fun() ->
-%%                     A = pack(1),
-%%                     B = pack(10),
-%%                     C = pack(100),
-%%                     ?assertEqual({[1,10,100], <<>>},
-%%                                  unpack(list_to_binary([A, B, C])))
-%%             end}
-%%     ].
-
 -define(PCNT, 5).
 -define(CNT, 10000).
 
@@ -425,7 +409,7 @@ benchmark3_test()->
 multirunner(What, Pack, Unpack) ->
     Self = self(),
     Nil = null,
-                   
+
     Data=[test_data() ++ [Nil] || _ <- lists:seq(0, ?CNT)],
     Packed = Pack(Data),
     Size = byte_size(Packed) div 1024,
@@ -485,3 +469,61 @@ benchmark_p0_test_() ->
                     multirunner("t2b/b2t",
                                 fun erlang:term_to_binary/1,
                                 fun erlang:binary_to_term/1))}].
+
+new_options_test_() ->
+    OldSpecOpt = [{spec, old}],
+    [
+     {"old spec",
+      [?_assertEqual(<<161,1>>, msgpack:pack(<<1>>, OldSpecOpt)),
+       ?_assertEqual(<<162,1,2>>, msgpack:pack(<<1,2>>, OldSpecOpt)),
+       ?_assertMatch(<<191, _:31/binary >>,
+                     msgpack:pack(binary:copy(<<1>>, 31), OldSpecOpt)),
+       ?_assertMatch(<<218, 0, 32, _:32/binary >>,
+                     msgpack:pack(binary:copy(<<1>>, 32), OldSpecOpt)),
+       ?_assertMatch(<<218, 255, 255, _:65535/binary >>,
+                     msgpack:pack(binary:copy(<<1>>, 65535), OldSpecOpt)),
+       ?_assertMatch(<<219, 0, 1, 0, 0, _:65536/binary >>,
+                     msgpack:pack(binary:copy(<<1>>, 65536), OldSpecOpt))
+      ]},
+     %% {"Decoding new spec binary with old spec",
+     %%  [?_assertEqual({error, {badarg, {new_spec, Code}}},
+     %%                 msgpack:unpack(<<Code, 0, 0, 0, 42>>, OldSpecOpt))
+     %%   || Code <- [16#D4, 16#D5, 16#D6, 16#D7, 16#D8, 16#C7, 16#C8, 16#C9,
+     %%               16#C4, 16#C5, 16#C6] ]},
+     {"allow_atom none/pack",
+      [?_assertEqual(<<196,4,97,116,111,109>>,
+                     msgpack:pack(atom, [{allow_atom, pack}])),
+       ?_assertEqual({error, {badarg, atom}},
+                     msgpack:pack(atom, [{allow_atom, none}]))]},
+     {"known_atoms, empty",
+      [?_assertEqual({error, {badarg, atom}},
+                     msgpack:pack(atom, [{known_atoms, []},
+                                         {allow_atom, none}]))]},
+     {"known_atoms, [atom] when atoms are not allowed",
+      [?_assertEqual(<<196,4,97,116,111,109>>,
+                     msgpack:pack(atom, [{known_atoms, [atom]},
+                                         {allow_atom, none}]))]},
+     {"pack_str, on binary()",
+      [?_assertEqual(<<196,3,97,97,97>>,
+                     msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,from_list}])),
+       %% ?_assertEqual(<<16#D9,3,97,97,97>>, Not passing
+       %%               msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,from_binary}])),
+       ?_assertEqual(<<196,3,97,97,97>>,
+                     msgpack:pack(<<"aaa">>, [{spec,new},{pack_str,none}]))
+      ]},
+     {"pack_str, on string()",
+      %% [?_assertEqual(<<196,3,97,97,97>>,
+      %%                msgpack:pack("aaa", [{spec,new},{pack_str,from_list}])),
+      %% ?_assertEqual(<<16#D9,3,97,97,97>>, Not passing
+      %%               msgpack:pack("aaa", [{spec,new},{pack_str,from_binary}])),
+      %% ?_assertEqual(<<196,3,97,97,97>>,
+      %%               msgpack:pack("aaa", [{spec,new},{pack_str,none}]))
+      []},
+     {"unpack_str, as_binary",
+      [
+      ]},
+     {"unpack_str, as_list", []},
+     {"validate_string, false",
+      []},
+     {"validate_string, true", []}
+    ].
