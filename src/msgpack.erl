@@ -159,12 +159,13 @@ parse_options([{known_atoms, Atoms}|T], Opt0) when is_list(Atoms) ->
     parse_options(T, Opt0?OPTION{known_atoms=Atoms});
 
 parse_options([{unpack_str, As}|T], Opt0) when As =:= as_binary orelse As =:= as_list ->
-    %% TODO Choose function here
     parse_options(T, Opt0?OPTION{unpack_str=As});
+
+parse_options([{validate_string, Bool}|T], Opt) when is_boolean(Bool) ->
+    parse_options(T, Opt?OPTION{validate_string=Bool});
 
 parse_options([{pack_str, From}|T], Opt)
   when From =:= from_binary orelse From =:= from_list orelse From =:= none ->
-    %% TODO Choose function here
     parse_options(T, Opt?OPTION{pack_str=From});
 
 parse_options([{map_format,Type}|T], Opt0)

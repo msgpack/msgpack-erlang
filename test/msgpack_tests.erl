@@ -607,8 +607,21 @@ new_spec_unpack_test_() ->
       ]}].
 
 unpack_str_validation_test_() ->
+    String = unicode:characters_to_binary("あいうえおかきくけこさしすせそ" "abcdefghijklmnopqrstuv"),
+    InvalidStr = <<255,255,255,255, 255,255,255,255, 255,255,255,255, 255,255,255,255>>,
+    WrongPack = <<16#D9, 16, InvalidStr/binary>>,
+    Packed = msgpack:pack(String, [{spec,new},{pack_str,from_binary}]),
+    NoValidation = [{spec,new},{unpack_str,as_binary},{validate_string,false}],
+    DoValidation = [{spec,new},{unpack_str,as_binary},{validate_string,true}],
     [{"validate_string false, on unpacking",
-      []},
+      [?_assertEqual({ok, String}, msgpack:unpack(Packed, NoValidation)),
+       ?_assertEqual({ok, InvalidStr}, msgpack:unpack(WrongPack, NoValidation))]},
      {"validate_string true, on unpacking",
-      []}
+      [?_assertEqual({ok, String}, msgpack:unpack(Packed, DoValidation)),
+       ?_assertEqual({error, {invalid_string, InvalidStr}}, msgpack:unpack(WrongPack, DoValidation)),
+
+       %% TODO: this should be invalid string
+       ?_assertEqual({error, {badarg, binary_to_list(InvalidStr)}},
+                     msgpack:unpack(binary_to_list(InvalidStr),
+                                    [{spec,new},{unpack_str,from_list},{validate_string,true}]))]}
     ].

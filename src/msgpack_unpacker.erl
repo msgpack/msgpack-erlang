@@ -230,8 +230,8 @@ maybe_bin(Bin, _) ->
 %% NOTE: msgpack DOES validate the binary as valid unicode string.
 unpack_str(Binary) ->
     case unicode:characters_to_list(Binary) of
-        {error, _S, _Rest} -> throw({error, {invalid_string, Binary}});
-        {incomplete, _S, _Rest} -> throw({error, {invalid_string, Binary}});
+        {error, _S, _Rest} -> throw({invalid_string, Binary});
+        {incomplete, _S, _Rest} -> throw({invalid_string, Binary});
         String -> String
     end.
 
