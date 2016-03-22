@@ -1,8 +1,8 @@
 # MessagePack Erlang
 
 [![Travis](https://secure.travis-ci.org/msgpack/msgpack-erlang.png)](https://travis-ci.org/msgpack/msgpack-erlang)
-
 [![Drone.io](https://drone.io/github.com/msgpack/msgpack-erlang/status.png)](https://drone.io/github.com/msgpack/msgpack-erlang)
+[![hex.pm version](https://img.shields.io/hexpm/v/msgpack.svg)](https://hex.pm/packages/msgpack)
 
 ## Prerequisites for runtime
 
