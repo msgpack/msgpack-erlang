@@ -226,9 +226,9 @@ test_data()->
 -endif.
 
 enable_str_test() ->
-    ?assertEqual(<<167:8, (<<"saitama">>)/binary >>,
+    ?assertEqual(<<167:8, "saitama">>,
                  msgpack:pack(<<"saitama">>, [{spec,old}])),
-    ?assertEqual(<<196,7,115,97,105,116,97,109,97>>,
+    ?assertEqual(<<2#101:3, 7:5, "saitama">>, %% binary becomes str8 from_binary
                  msgpack:pack(<<"saitama">>, [{spec,new},{pack_str,from_binary}])).
 
 basic_test()->
