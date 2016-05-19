@@ -117,7 +117,7 @@ the option would be the best.
 
 ### `{map_format, map|jiffy|jsx}`
 
-Both at packing and unpacking. Default value is `maps`.
+Both at packing and unpacking. Default value is `map`.
 
 ```erlang
 msgpack:pack(#{ <<"key">> => <<"value">> }, []).
