@@ -115,7 +115,7 @@ the option would be the best.
 
 - \* Tries to pack as `str` if it is a valid `string()`.
 
-### `{map_format, maps|jiffy|jsx}`
+### `{map_format, map|jiffy|jsx}`
 
 Both at packing and unpacking. Default value is `maps`.
 
