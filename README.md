@@ -150,6 +150,10 @@ Apache License 2.0
 
 # Release Notes
 
+## 0.6.0
+
+- Support OTP 19.0
+
 ## 0.5.0
 
 - Renewed optional arguments to pack/unpack interface. This is
