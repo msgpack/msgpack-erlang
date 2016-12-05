@@ -625,3 +625,14 @@ unpack_str_validation_test_() ->
                      msgpack:unpack(binary_to_list(InvalidStr),
                                     [{spec,new},{unpack_str,from_list},{validate_string,true}]))]}
     ].
+
+
+float_unpacking_test_() ->
+    %% float 32
+   [?_assertEqual({ok, nan}, msgpack:unpack(<<16#CA, 16#FF, 16#FF, 16#FF, 16#FF>>)),
+    ?_assertEqual({ok, positive_infinity}, msgpack:unpack(<<16#CA, 16#7F, 16#80, 16#00, 16#00>>)),
+    ?_assertEqual({ok, negative_infinity}, msgpack:unpack(<<16#CA, 16#FF, 16#80, 16#00, 16#00>>)),
+    %% float 64
+    ?_assertEqual({ok, nan}, msgpack:unpack(<<16#CB, 16#FF, 16#FF, 16#FF, 16#FF, 16#FF, 16#FF, 16#FF, 16#FF>>)),
+    ?_assertEqual({ok, positive_infinity}, msgpack:unpack(<<16#CB, 16#7F, 16#F0, 16#00, 16#00, 16#00, 16#00, 16#00, 16#00>>)),
+    ?_assertEqual({ok, negative_infinity}, msgpack:unpack(<<16#CB, 16#FF, 16#F0, 16#00, 16#00, 16#00, 16#00, 16#00, 16#00>>))].
