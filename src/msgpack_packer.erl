@@ -61,7 +61,7 @@ pack(Map, Opt = ?OPTION{map_format=jsx}) when Map =:= [{}]->
 pack([{_,_}|_] = Map, Opt = ?OPTION{map_format=jsx}) ->
     pack_map(Map, Opt);
 
-pack({string, String}, ?OPTION{spec=new, pack_str=with_tag}=Opt) ->
+pack({string, String}, ?OPTION{spec=new, pack_str=from_tagged_list}=Opt) ->
     case pack_string(String, Opt) of
         {error, _} -> throw({badarg, String});
         Bin when is_binary(Bin) -> Bin
