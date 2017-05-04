@@ -233,7 +233,8 @@ unpack_str_or_raw(V, ?OPTION{spec=new,
     {case UnpackStr of
          as_binary when ValidateString -> unpack_str(V), maybe_bin(V, Opt);
          as_binary -> maybe_bin(V, Opt);
-         as_list -> unpack_str(V)
+         as_list -> unpack_str(V);
+         as_tagged_list -> {string, unpack_str(V)}
      end, Rest}.
 
 maybe_bin(Bin, _) ->

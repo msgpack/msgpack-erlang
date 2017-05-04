@@ -568,6 +568,17 @@ new_spec_pack_test_() ->
         ?_assertMatch(<<16#DD, 0, 1, 0, 0, _:65536/binary>>,       %% 0xDD, four bytes, N objects
                       msgpack:pack(list_minus_one(65536), [{spec,new},{pack_str,PackStr}]))]
        || PackStr <- [from_list, from_binary, none]]
+     },
+     {"pack_str from_tagged_list",
+      [?_assertEqual(<<2#101:3, 3:5, 97,97,97>>,
+                     msgpack:pack({string, "aaa"}, [{spec,new},{pack_str,from_tagged_list}])),
+       ?_assertMatch(<<16#D9, 32, _:32/binary>>,
+                     msgpack:pack({string, list_a(32)}, [{spec,new},{pack_str,from_tagged_list}])),
+       ?_assertMatch(<<16#DA, 1, 0, _:256/binary>>,
+                     msgpack:pack({string, list_a(256)}, [{spec,new},{pack_str,from_tagged_list}])),
+       ?_assertMatch(<<16#DB, 0, 1, 0, 0, _:65536/binary>>,
+                     msgpack:pack({string, list_a(65536)}, [{spec,new},{pack_str,from_tagged_list}]))
+      ]
      }].
 
 new_spec_unpack_test_() ->
@@ -603,7 +614,9 @@ new_spec_unpack_test_() ->
        ?_assertEqual({ok, list_a(256)},
                      msgpack:unpack(<<16#DA, 1,0, (binary_a(256))/binary>>, [{spec,new},{unpack_str,as_list}])),
        ?_assertEqual({ok, list_a(65536)},
-                     msgpack:unpack(<<16#DB, 0,1,0,0, (binary_a(65536))/binary>>, [{spec,new},{unpack_str,as_list}]))
+                     msgpack:unpack(<<16#DB, 0,1,0,0, (binary_a(65536))/binary>>, [{spec,new},{unpack_str,as_list}])),
+       ?_assertEqual({ok, {string, "aaa"}},
+                     msgpack:unpack(<<2#101:3, 3:5, 97,97,97>>, [{spec,new},{unpack_str,as_tagged_list}]))
       ]}].
 
 unpack_str_validation_test_() ->
