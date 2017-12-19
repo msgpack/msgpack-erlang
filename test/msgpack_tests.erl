@@ -379,6 +379,13 @@ binary_test_() ->
       end}
     ].
 
+atom_test_() ->
+    Map1=#{atom1=>atom1,atom2=><<"binary2">>},
+    Bin=msgpack:pack(Map1),
+    ?_assertEqual({ok,#{<<"atom1">>=><<"atom1">>,
+                       <<"atom2">>=><<"binary2">>}}, msgpack:unpack(Bin)),
+    ?_assertEqual({ok,Map1}, msgpack:unpack(Bin,[{known_atoms,[atom1,atom2]}])).
+
 -define(PCNT, 5).
 -define(CNT, 10000).
 
