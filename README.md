@@ -121,8 +121,9 @@ Both at packing and unpacking. Default value is `map`.
 
 ```erlang
 msgpack:pack(#{ <<"key">> => <<"value">> }, []).
-msgpack:pack({[{<<"key">>, <<"value">>}]}, [{format, jiffy}]),
-msgpack:pack([{<<"key">>, <<"value">>}], [{format, jsx}]).
+msgpack:pack(#{ <<"key">> => <<"value">> }, [{map_format, map}]).
+msgpack:pack({[{<<"key">>, <<"value">>}]}, [{map_format, jiffy}]),
+msgpack:pack([{<<"key">>, <<"value">>}], [{map_format, jsx}]).
 ```
 
 
