@@ -237,6 +237,14 @@ unpack_str_or_raw(V, ?OPTION{spec=new,
          as_tagged_list -> {string, unpack_str(V)}
      end, Rest}.
 
+maybe_bin(Bin, ?OPTION{known_atoms=Known}) when Known=/=[] ->
+    case lists:member(Bin,Known) of
+        true ->
+            erlang:binary_to_existing_atom(Bin,utf8);
+        false ->
+            Bin
+    end;
+
 maybe_bin(Bin, _) ->
     Bin.
 

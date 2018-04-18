@@ -129,7 +129,15 @@ unpack_stream(Bin) -> unpack_stream(Bin, []).
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
     try
-        msgpack_unpacker:unpack_stream(Bin, Opts)
+        Opts1=Opts?OPTION{
+                     known_atoms=lists:map(
+                                   fun(X) ->
+                                           erlang:atom_to_binary(X, utf8)
+                                   end,
+                                   Opts?OPTION.known_atoms
+                                  )
+                    },
+        msgpack_unpacker:unpack_stream(Bin, Opts1)
     catch
         throw:Exception -> {error, Exception}
     end;
