@@ -386,6 +386,29 @@ atom_test_() ->
                        <<"atom2">>=><<"binary2">>}}, msgpack:unpack(Bin)),
     ?_assertEqual({ok,Map1}, msgpack:unpack(Bin,[{known_atoms,[atom1,atom2]}])).
 
+list_pack_test_() ->
+    [
+     {"list or string",
+      fun() ->
+              Source=#{
+                string=>"hello",
+                bad_array=>[ 104,101,108,108,111 ],
+                array=>{array,[ 104,101,108,108,111 ]}
+               },
+              Bin=msgpack:pack(Source,[{spec, new}, {pack_str,from_list}]),
+              {ok,Repacked}=msgpack:unpack(Bin,[{spec,
+                                                 new},
+                                                {unpack_str,as_tagged_list}]),
+              ?assertMatch(#{
+                 <<"string">> := {string,"hello"},
+                 <<"bad_array">> := {string, "hello"},
+                 <<"array">> := [ 104,101,108,108,111 ]
+                }, Repacked)
+      end
+     }
+    ].
+
+
 -define(PCNT, 5).
 -define(CNT, 10000).
 
