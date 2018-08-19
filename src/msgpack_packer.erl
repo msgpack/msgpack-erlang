@@ -66,6 +66,10 @@ pack({string, String}, ?OPTION{spec=new, pack_str=from_tagged_list}=Opt) ->
         {error, _} -> throw({badarg, String});
         Bin when is_binary(Bin) -> Bin
     end;
+
+pack({array, List}, ?OPTION{spec=new, pack_str=from_list}=Opt)  when is_list(List) ->
+    pack_array(List, Opt);
+
 pack(List, ?OPTION{spec=new, pack_str=from_list}=Opt)  when is_list(List) ->
     try
         case lists:all(fun is_integer/1, List) of
