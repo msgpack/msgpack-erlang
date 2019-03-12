@@ -38,6 +38,7 @@
           allow_atom = pack  :: none | pack, %% allows atom when packing
           known_atoms = [] :: [atom()|binary()],
           unpack_str = as_list :: as_binary | as_list | as_tagged_list,
+          use_nil = false :: boolean(),
           validate_string = false :: boolean(),
           pack_str = from_list :: from_binary | from_list | from_tagged_list | none,
           map_format = ?DEFAULT_MAP_FORMAT :: format_type(),

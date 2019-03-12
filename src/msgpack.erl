@@ -53,6 +53,7 @@
          {allow_atom, none|pack} |
          {known_atoms, [atom()]} |
          {unpack_str, as_binary|as_list|as_tagged_list} |
+         {use_nil, boolean()} |
          {validate_string, boolean()} |
          {pack_str, from_binary|from_list|from_tagged_list|none} |
          {map_format, map|jiffy|jsx} |
@@ -168,6 +169,9 @@ parse_options([{known_atoms, Atoms}|T], Opt0) when is_list(Atoms) ->
 
 parse_options([{unpack_str, As}|T], Opt0) when As =:= as_binary orelse As =:= as_list orelse As =:= as_tagged_list ->
     parse_options(T, Opt0?OPTION{unpack_str=As});
+
+parse_options([{use_nil, Bool}|T], Opt) when is_boolean(Bool) ->
+    parse_options(T, Opt?OPTION{use_nil=Bool});
 
 parse_options([{validate_string, Bool}|T], Opt) when is_boolean(Bool) ->
     parse_options(T, Opt?OPTION{validate_string=Bool});

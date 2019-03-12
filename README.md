@@ -90,6 +90,10 @@ bin         binary()     binary()
 str         binary()     string()
 ```
 
+### `{use_nil, boolean()}`
+
+Handles Elixir `nil` as `null` Erlang atom. Default value is `false`.
+
 ### `{validate_string, boolean()}`
 
 Only in unpacking, UTF-8 validation at unpacking from `str` type will

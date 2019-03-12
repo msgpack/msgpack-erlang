@@ -33,6 +33,8 @@ pack(F, _) when is_float(F) ->
     pack_double(F);
 pack(null, _Opt) ->
     << 16#C0:8 >>;
+pack(nil, ?OPTION{use_nil = true}) ->
+    << 16#C0:8 >>;
 pack(false, _) ->
     << 16#C2:8 >>;
 pack(true, _) ->
