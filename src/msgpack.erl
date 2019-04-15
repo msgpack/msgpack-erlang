@@ -86,10 +86,10 @@ binary_to_term(Bin, Opt) ->
 
 %% @doc Encode an erlang term into an msgpack binary.
 %%      Returns {error, {badarg, term()}} if the input is illegal.
--spec pack(msgpack:object()) -> binary() | {error, _}.
+-spec pack(any()) -> binary() | {error, _}.
 pack(Term) -> msgpack:pack(Term, []).
 
--spec pack(msgpack:object(), msgpack:options()) -> binary() | {error, _}.
+-spec pack(any(), msgpack:options()) -> binary() | {error, _}.
 pack(Term, Opts) ->
     Option = parse_options(Opts),
     try
