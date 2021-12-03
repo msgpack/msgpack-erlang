@@ -24,7 +24,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% pack them all
--spec pack(msgpack:object(), ?OPTION{}) -> binary() | {error, any()}.
+-spec pack(msgpack:object(), ?OPTION{}) -> binary().
 pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
 pack(I, _) when is_integer(I) ->
