@@ -27,7 +27,7 @@
 -export([unpack_map/3, unpack_map_jiffy/3, unpack_map_jsx/3]).
 
 %% unpack them all
--spec unpack_stream(Bin::binary(), ?OPTION{}) -> {msgpack:object(), binary()} | no_return().
+-spec unpack_stream(Bin::binary(), ?OPTION{}) -> {msgpack:object(), binary()} | {error, any()} | no_return().
 %% ATOMS
 unpack_stream(<<16#C0, Rest/binary>>, _) ->
     {null, Rest};

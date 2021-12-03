@@ -24,7 +24,7 @@
 -include_lib("eunit/include/eunit.hrl").
 
 %% pack them all
--spec pack(msgpack:object(), ?OPTION{}) -> binary().
+-spec pack(msgpack:object(), ?OPTION{}) -> binary() | {error, any()}.
 pack(I, _) when is_integer(I) andalso I < 0 ->
     pack_int(I);
 pack(I, _) when is_integer(I) ->
@@ -345,7 +345,7 @@ pack_map(M, Opt)->
             throw({badarg, M})
     end.
 
--spec pack_ext(any(), msgpack:ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
+-spec pack_ext(any(), msgpack:ext_packer(), msgpack:options()) -> {ok, binary()}.
 pack_ext(Any, Packer, Opt) ->
     case Packer(Any, Opt) of
         {ok, {Type, Data}} when -16#80 =< Type andalso Type =< 16#7F ->
