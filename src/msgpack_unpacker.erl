@@ -170,11 +170,13 @@ unpack_stream(<<16#C9, Len:32, Type:1/signed-integer-unit:8, Data:Len/binary, Re
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt)  ->
     maybe_unpack_ext(16#C9, Unpack, Type, Data, Rest, Orig, Opt);
 
+%% Do not remove the binary wrapper from the function clause, it is a bin optimization for reusing the context
 unpack_stream(<<_Bin/binary>>, _Opt) ->
     throw(incomplete).
 
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
 -spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], ?OPTION{}) ->
-                          {[msgpack:object()], binary()} | no_return().
+    {[msgpack:object()], binary()} | no_return().
 unpack_array(<<Bin/binary>>, 0,   Acc, _) ->
     {lists:reverse(Acc), Bin};
 unpack_array(<<Bin/binary>>, Len, Acc, Opt) ->
@@ -216,15 +218,17 @@ unpack_map_jsx(Bin, Len, Opt) ->
         {Map, Rest} -> {Map, Rest}
     end.
 
+%% Do not remove the binary wrapper from the function clause, it is a bin optimization for reusing the context
 -spec unpack_map_as_proplist(binary(), non_neg_integer(), proplists:proplist(), ?OPTION{}) ->
                                     {proplists:proplist(), binary()} | no_return().
-unpack_map_as_proplist(Bin, 0, Acc, _) ->
+unpack_map_as_proplist(<<Bin/binary>>, 0, Acc, _) ->
     {lists:reverse(Acc), Bin};
-unpack_map_as_proplist(Bin, Len, Acc, Opt) ->
+unpack_map_as_proplist(<<Bin/binary>>, Len, Acc, Opt) ->
     {Key, Rest} = unpack_stream(Bin, Opt),
     {Value, Rest2} = unpack_stream(Rest, Opt),
     unpack_map_as_proplist(Rest2, Len-1, [{Key,Value}|Acc], Opt).
 
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
 unpack_str_or_raw(<<V/binary>>, ?OPTION{spec=old} = Opt, Rest) ->
     {maybe_bin(V, Opt), Rest};
 unpack_str_or_raw(<<V/binary>>, ?OPTION{spec=new,
@@ -237,6 +241,7 @@ unpack_str_or_raw(<<V/binary>>, ?OPTION{spec=new,
          as_tagged_list -> {string, unpack_str(V)}
      end, Rest}.
 
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
 maybe_bin(<<Bin/binary>>, ?OPTION{known_atoms=Known}) when Known=/=[] ->
     case lists:member(Bin,Known) of
         true ->
@@ -256,6 +261,7 @@ unpack_str(<<Binary/binary>>) ->
         String -> String
     end.
 
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
 maybe_unpack_ext(F, _, _, <<_/binary>>, <<_Rest/binary>>, _, ?OPTION{spec=old}) ->
     %% trying to unpack new ext formats with old unpacker
     throw({badarg, {new_spec, F}});
