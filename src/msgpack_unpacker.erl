@@ -170,14 +170,16 @@ unpack_stream(<<16#C9, Len:32, Type:1/signed-integer-unit:8, Data:Len/binary, Re
               ?OPTION{ext_unpacker=Unpack, original_list=Orig} = Opt)  ->
     maybe_unpack_ext(16#C9, Unpack, Type, Data, Rest, Orig, Opt);
 
-unpack_stream(_Bin, _Opt) ->
+%% Do not remove the binary wrapper from the function clause, it is a bin optimization for reusing the context
+unpack_stream(<<_Bin/binary>>, _Opt) ->
     throw(incomplete).
 
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
 -spec unpack_array(binary(), non_neg_integer(), [msgpack:object()], ?OPTION{}) ->
-                          {[msgpack:object()], binary()} | no_return().
-unpack_array(Bin, 0,   Acc, _) ->
+    {[msgpack:object()], binary()} | no_return().
+unpack_array(<<Bin/binary>>, 0,   Acc, _) ->
     {lists:reverse(Acc), Bin};
-unpack_array(Bin, Len, Acc, Opt) ->
+unpack_array(<<Bin/binary>>, Len, Acc, Opt) ->
     {Term, Rest} = unpack_stream(Bin, Opt),
     unpack_array(Rest, Len-1, [Term|Acc], Opt).
 
@@ -216,18 +218,20 @@ unpack_map_jsx(Bin, Len, Opt) ->
         {Map, Rest} -> {Map, Rest}
     end.
 
+%% Do not remove the binary wrapper from the function clause, it is a bin optimization for reusing the context
 -spec unpack_map_as_proplist(binary(), non_neg_integer(), proplists:proplist(), ?OPTION{}) ->
                                     {proplists:proplist(), binary()} | no_return().
-unpack_map_as_proplist(Bin, 0, Acc, _) ->
+unpack_map_as_proplist(<<Bin/binary>>, 0, Acc, _) ->
     {lists:reverse(Acc), Bin};
-unpack_map_as_proplist(Bin, Len, Acc, Opt) ->
+unpack_map_as_proplist(<<Bin/binary>>, Len, Acc, Opt) ->
     {Key, Rest} = unpack_stream(Bin, Opt),
     {Value, Rest2} = unpack_stream(Rest, Opt),
     unpack_map_as_proplist(Rest2, Len-1, [{Key,Value}|Acc], Opt).
 
-unpack_str_or_raw(V, ?OPTION{spec=old} = Opt, Rest) ->
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
+unpack_str_or_raw(<<V/binary>>, ?OPTION{spec=old} = Opt, Rest) ->
     {maybe_bin(V, Opt), Rest};
-unpack_str_or_raw(V, ?OPTION{spec=new,
+unpack_str_or_raw(<<V/binary>>, ?OPTION{spec=new,
                              unpack_str=UnpackStr,
                              validate_string=ValidateString} = Opt, Rest) ->
     {case UnpackStr of
@@ -237,7 +241,8 @@ unpack_str_or_raw(V, ?OPTION{spec=new,
          as_tagged_list -> {string, unpack_str(V)}
      end, Rest}.
 
-maybe_bin(Bin, ?OPTION{known_atoms=Known}) when Known=/=[] ->
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
+maybe_bin(<<Bin/binary>>, ?OPTION{known_atoms=Known}) when Known=/=[] ->
     case lists:member(Bin,Known) of
         true ->
             erlang:binary_to_existing_atom(Bin,utf8);
@@ -245,29 +250,30 @@ maybe_bin(Bin, ?OPTION{known_atoms=Known}) when Known=/=[] ->
             Bin
     end;
 
-maybe_bin(Bin, _) ->
+maybe_bin(<<Bin/binary>>, _) ->
     Bin.
 
 %% NOTE: msgpack DOES validate the binary as valid unicode string.
-unpack_str(Binary) ->
+unpack_str(<<Binary/binary>>) ->
     case unicode:characters_to_list(Binary) of
         {error, _S, _Rest} -> throw({invalid_string, Binary});
         {incomplete, _S, _Rest} -> throw({invalid_string, Binary});
         String -> String
     end.
 
-maybe_unpack_ext(F, _, _, _, _Rest, _, ?OPTION{spec=old}) ->
+%% Do not remove the binary wrapper from the function clauses, it is a bin optimization for reusing the context
+maybe_unpack_ext(F, _, _, <<_/binary>>, <<_Rest/binary>>, _, ?OPTION{spec=old}) ->
     %% trying to unpack new ext formats with old unpacker
     throw({badarg, {new_spec, F}});
-maybe_unpack_ext(F, undefined, _, _, _Rest, _, _) ->
+maybe_unpack_ext(F, undefined, _, <<_/binary>>, <<_Rest/binary>>, _, _) ->
     throw({badarg, {bad_ext, F}});
-maybe_unpack_ext(_, Unpack, Type, Data, Rest, Orig, _)
+maybe_unpack_ext(_, Unpack, Type, <<Data/binary>>, <<Rest/binary>>, Orig, _)
   when is_function(Unpack, 3) ->
     case Unpack(Type, Data, Orig) of
         {ok, Term} -> {Term, Rest};
         {error, E} -> {error, E}
     end;
-maybe_unpack_ext(_, Unpack, Type, Data, Rest, _, _)
+maybe_unpack_ext(_, Unpack, Type, <<Data/binary>>, <<Rest/binary>>, _, _)
   when is_function(Unpack, 2) ->
     case Unpack(Type, Data) of
         {ok, Term} -> {Term, Rest};
