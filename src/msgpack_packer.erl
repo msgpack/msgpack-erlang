@@ -158,8 +158,24 @@ pack_uint(N) when (N band 16#FFFFFFFF) =:= N->
 pack_uint(N) when (N band 16#FFFFFFFFFFFFFFFF) =:= N ->
     << 16#CF:8, N:64/big-unsigned-integer-unit:1 >>;
 %% too big unit
-pack_uint(N) ->
-    throw({badarg, N}).
+% https://github.com/msgpack/msgpack/blob/73b3adb3099ef93326a4c93864d8f29e69b0c545/spec.md#bigint-extension-type
+pack_uint(N) when N > 0 ->
+  Bin=binary:encode_unsigned(N),
+  BS = byte_size(Bin),
+  if BS==1 -> <<16#d4:8, Bin/binary>>;
+     BS==2 -> <<16#d5:8, Bin/binary>>;
+     BS==4 -> <<16#d5:8, Bin/binary>>;
+     BS==8 -> <<16#d5:8, Bin/binary>>;
+     BS==16 -> <<16#d5:8, Bin/binary>>;
+     BS < 256 ->
+       <<16#C7:8, BS:8/big, -2:8/signed, Bin/binary>>;
+     BS <65536 ->
+       <<16#C8:8, BS:16/big, -2:8/signed, Bin/binary>>;
+     BS < 4294967296 ->
+       <<16#C9:8, BS:32/big, -2:8/signed, Bin/binary>>;
+     true ->
+       throw({badarg, N})
+  end.
 
 
 %% @doc float : erlang's float is always IEEE 754 64bit format. Thus it

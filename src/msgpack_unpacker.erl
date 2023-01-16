@@ -259,6 +259,9 @@ unpack_str(Binary) ->
 maybe_unpack_ext(F, _, _, _, _Rest, _, ?OPTION{spec=old}) ->
     %% trying to unpack new ext formats with old unpacker
     throw({badarg, {new_spec, F}});
+% https://github.com/msgpack/msgpack/blob/73b3adb3099ef93326a4c93864d8f29e69b0c545/spec.md#bigint-extension-type
+maybe_unpack_ext(_, _, -2, Data, Rest, _, _) ->
+    {binary:decode_unsigned(Data, big), Rest};
 maybe_unpack_ext(F, undefined, _, _, _Rest, _, _) ->
     throw({badarg, {bad_ext, F}});
 maybe_unpack_ext(_, Unpack, Type, Data, Rest, Orig, _)
