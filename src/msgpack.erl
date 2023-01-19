@@ -120,12 +120,14 @@ unpack(Bin, Opts) ->
 
 -spec unpack_stream(binary()) -> {msgpack:object(), binary()}
                                      | {error, incomplete}
-                                     | {error, {badarg, term()}}.
+                                     | {error, {badarg, term()}}
+                                     | {error, any()}.
 unpack_stream(Bin) -> unpack_stream(Bin, []).
 
 -spec unpack_stream(binary(), msgpack:options())->  {msgpack:object(), binary()}
                                                        | {error, incomplete}
-                                                       | {error, {badarg, term()}}.
+                                                       | {error, {badarg, term()}}
+                                                       | {error, any()}.
 unpack_stream(Bin, Opts0) when is_binary(Bin) ->
     Opts = parse_options(Opts0),
     try
