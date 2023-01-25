@@ -1,0 +1,30 @@
+name: Check All
+run-name: triggered by ${{ github.actor }}
+on: [push]
+  #push:
+  #  branches: [ $default-branch ]
+  #pull_request:
+  #  branches: [ $default-branch ]
+
+permissions:
+  contents: read
+
+jobs:
+
+  build:
+    strategy:
+      matrix:
+        version: [22, 23, 24, 25]
+    runs-on: ubuntu-latest
+
+    container:
+      image: erlang:${{ matrix.version }}
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Compile
+      run: rebar3 compile
+    - name: Test
+      run: rebar3 eunit
+    - name: Check
+      run: rebar3 dialyzer
