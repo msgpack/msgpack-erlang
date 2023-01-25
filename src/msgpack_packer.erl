@@ -345,7 +345,7 @@ pack_map(M, Opt)->
             throw({badarg, M})
     end.
 
--spec pack_ext(any(), msgpack:ext_packer(), msgpack:options()) -> {ok, binary()}.
+-spec pack_ext(any(), msgpack:ext_packer(), msgpack:options()) -> {ok, binary()} | {error, any()}.
 pack_ext(Any, Packer, Opt) ->
     case Packer(Any, Opt) of
         {ok, {Type, Data}} when -16#80 =< Type andalso Type =< 16#7F ->
