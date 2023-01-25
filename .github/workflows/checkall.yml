@@ -1,10 +1,10 @@
 name: Check All
 run-name: triggered by ${{ github.actor }}
-on:
-  push:
-    branches: [ $default-branch ]
-  pull_request:
-    branches: [ $default-branch ]
+on: [push]
+  #push:
+  #  branches: [ $default-branch ]
+  #pull_request:
+  #  branches: [ $default-branch ]
 
 permissions:
   contents: read
