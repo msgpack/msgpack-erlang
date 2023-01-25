@@ -1,19 +1,8 @@
-.PHONY: compile clean check-all test
+.PHONY: all clean
 
 REBAR=rebar3
 
-all: compile
-
-compile:
-	@$(REBAR) compile
-
-test:
-	@$(REBAR) eunit
-
+all:
+	@$(REBAR) do compile, eunit, dialyzer, xref
 clean:
 	@$(REBAR) clean
-
-dialyzer:
-	@$(REBAR) dialyzer
-
-check-all: test dialyzer

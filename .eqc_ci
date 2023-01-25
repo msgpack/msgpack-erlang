@@ -1,3 +1,0 @@
-{build, "./rebar3 compile eqc"}.
-{test_path, "./_build/eqc/lib/msgpack/ebin"}.
-{test_path, "./_build/eqc/lib/msgpack"}.
