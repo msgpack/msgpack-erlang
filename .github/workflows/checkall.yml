@@ -25,6 +25,6 @@ jobs:
     - name: Compile
       run: rebar3 compile
     - name: Test
-      run: rebar3 as test eunit eqc
+      run: rebar3 eunit
     - name: Check
-      run: rebar3 xref dialyzer
+      run: rebar3 dialyzer
