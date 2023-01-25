@@ -4,7 +4,7 @@
 
 ## Prerequisites for runtime
 
-[Erlang/OTP](http://erlang.org/), >= 17.0 Also based on
+[Erlang/OTP](http://erlang.org/), >= 22.0 Also based on
 [the new msgpack spec 0b8f5a](https://github.com/msgpack/msgpack/blob/0b8f5ac67cdd130f4d4d4fe6afb839b989fdb86a/spec.md).
 
 ## edit rebar.config to use in your application
