@@ -657,6 +657,17 @@ pack_nil_test_() ->
       [?_assertEqual({ok, null}, msgpack:unpack(UseNilTrueResult))]}
     ].
 
+unpack_nil_test_() ->
+    NullPacked = <<16#C0>>,
+    NilConversionOpt = [{use_nil, true}],
+    UseNilDefaultResult = msgpack:unpack(NullPacked),
+    UseNilTrueResult = msgpack:unpack(NullPacked, NilConversionOpt),
+    [{"use_nil default false",
+      [?_assertEqual({ok, null}, UseNilDefaultResult)]},
+     {"use_nil explicitly set to true",
+      [?_assertEqual({ok, nil}, UseNilTrueResult)]}
+    ].
+
 float_unpacking_test_() ->
     %% float 32
    [?_assertEqual({ok, nan}, msgpack:unpack(<<16#CA, 16#FF, 16#FF, 16#FF, 16#FF>>)),

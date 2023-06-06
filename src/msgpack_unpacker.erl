@@ -29,6 +29,8 @@
 %% unpack them all
 -spec unpack_stream(Bin::binary(), ?OPTION{}) -> {msgpack:object(), binary()} | {error, any()} | no_return().
 %% ATOMS
+unpack_stream(<<16#C0, Rest/binary>>, ?OPTION{use_nil = true}) ->
+    {nil, Rest};
 unpack_stream(<<16#C0, Rest/binary>>, _) ->
     {null, Rest};
 unpack_stream(<<16#C2, Rest/binary>>, _) ->
