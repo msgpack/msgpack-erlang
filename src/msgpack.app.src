@@ -1,6 +1,6 @@
 {application,msgpack,
              [{description,"MessagePack serializer/deserializer"},
-              {vsn,"0.7.0"},
+              {vsn,"0.8.1"},
               {modules,[msgpack]},
               {maintainers,["Kota Uenishi","Yuki Ito"]},
               {licenses,["Apache"]},
