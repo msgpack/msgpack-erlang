@@ -646,6 +646,27 @@ unpack_str_validation_test_() ->
                                     [{spec,new},{unpack_str,from_list},{validate_string,true}]))]}
     ].
 
+pack_nil_test_() ->
+    ElixirStyleNil = nil,
+    NilConversionOpt = [{use_nil, true}],
+    UseNilDefaultResult = msgpack:pack(ElixirStyleNil),
+    UseNilTrueResult = msgpack:pack(ElixirStyleNil, NilConversionOpt),
+    [{"use_nil default false",
+      [?_assertEqual({ok, <<"nil">>}, msgpack:unpack(UseNilDefaultResult))]},
+     {"use_nil explicitly set to true",
+      [?_assertEqual({ok, null}, msgpack:unpack(UseNilTrueResult))]}
+    ].
+
+unpack_nil_test_() ->
+    NullPacked = <<16#C0>>,
+    NilConversionOpt = [{use_nil, true}],
+    UseNilDefaultResult = msgpack:unpack(NullPacked),
+    UseNilTrueResult = msgpack:unpack(NullPacked, NilConversionOpt),
+    [{"use_nil default false",
+      [?_assertEqual({ok, null}, UseNilDefaultResult)]},
+     {"use_nil explicitly set to true",
+      [?_assertEqual({ok, nil}, UseNilTrueResult)]}
+    ].
 
 float_unpacking_test_() ->
     %% float 32
