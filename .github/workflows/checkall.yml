@@ -1,6 +1,6 @@
 name: Check All
 run-name: triggered by ${{ github.actor }}
-on: [push]
+on: [push, workflow_dispatch]
 
 permissions:
   contents: read
