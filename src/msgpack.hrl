@@ -28,6 +28,7 @@
 -type msgpack_term() :: [msgpack_term()] | msgpack_map() |
                         integer() | float() | boolean() | binary() | string() | {string, string()}.
 
+%% jiffy, jsx would be soon deprecated as the map is now primitive type.
 -type format_type() :: jsx|jiffy|map.
 
 -define(DEFAULT_MAP_FORMAT, map).
