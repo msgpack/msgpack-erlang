@@ -61,45 +61,6 @@ container_types() ->
     [ fix_array(), array16() ].
 %% TODO: add map
 
-primitive_types() ->
-    [null(),
-     positive_fixnum(), negative_fixnum(),
-     int8(), int16(), int32(), int64(),
-     uint8(), uint16(), uint32(), uint64(),
-     eqc_gen:real(), eqc_gen:bool(),
-     fix_raw(), raw16(), raw32()
-    ].
-          %% fix_raw(), raw16(), raw32()]).
-
-positive_fixnum() -> choose(0, 127).
-negative_fixnum() -> choose(-32, -1).
-
-int8() ->  choose(-16#80, 16#7F).
-int16() -> oneof([choose(-16#8000, -16#81),
-                  choose(16#80, 16#7FFF)]).
-int32() -> oneof([choose(-16#80000000, -16#8001),
-                  choose(16#10000, 16#7FFFFFFF)]).
-int64() -> oneof([choose(-16#8000000000000000, -16#80000001),
-                  choose(16#100000000, 16#7FFFFFFFFFFFFFFF)]).
-
-uint8() ->  choose(0, 16#FF).
-uint16() -> choose(16#100, 16#FFFF).
-uint32() -> choose(16#10000, 16#FFFFFFFF).
-uint64() -> choose(16#100000000, 16#FFFFFFFFFFFFFFFF).
-
-null() -> null.
-
-fix_raw() ->
-    ?LET(Integer, choose(0, 31),
-         ?LET(Binary, binary(Integer), Binary)).
-
-raw16() ->
-    ?LET(Integer, uint16(),
-         ?LET(Binary, binary(Integer), Binary)).
-
-raw32() ->
-    ?LET(Binary, binary(65537), Binary).
-
 fix_array() ->
     eqc_gen:resize(16, eqc_gen:list(oneof(primitive_types()))).
 
