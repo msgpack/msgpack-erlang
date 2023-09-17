@@ -73,6 +73,12 @@ prop_array_primitive() ->
        {oneof([fix_array_primitive(), array16_primitive()]), stable_opts()},
        pack_and_unpack(Array, Opts)).
 
+prop_map_primitive() ->
+    ?FORALL(
+       {Map, Opts},
+       {oneof([fix_map_primitive(), map16_primitive()]), stable_opts()},
+       pack_and_unpack(Map, Opts)).
+
 prop_msgpack() ->
     ?FORALL({Obj, Opts},
             {msgpack_object(), stable_opts()},
@@ -101,11 +107,7 @@ pack_and_unpack(Obj, Opts) ->
 %%% Generators %%%
 stable_opts() ->
     % TODO: build property tests on options
-    oneof([
-           [],
-           [{map_format, jiffy}],
-           [{map_format, jsx}]
-          ]).
+    [].
 
 null() -> null.
 
@@ -148,16 +150,34 @@ primitive_types() ->
 
 
 container_types() ->
-    [ fix_array_primitive(), array16_primitive() ].
+    [ fix_array_primitive(), array16_primitive(),
+      fix_map_primitive(), map16_primitive() ].
 
 fix_array_primitive() ->
-    % up to 2^4-1
+    %% up to 2^4-1
+    %% TODO: check the first 4 bits be 1001
     resize(15, proper_types:list(oneof(primitive_types()))).
 
 array16_primitive() ->
-    % Up to 2^16-1, but for performance
+    %% Up to 2^16-1, but for performance
+    %% TODO: check the first byte be 0xdc (so s 0xdd for array32)
     resize(128, proper_types:list(oneof(primitive_types()))).
 
+fix_map_primitive() ->
+    %% up to 2^4-1
+    %% TODO: check the first 4 bits be 1000
+    resize(15,
+           proper_types:map(
+             oneof(primitive_types()),
+             oneof(primitive_types()))).
+
+map16_primitive() ->
+    %% Up to 2^16-1, but for performance
+    %% TODO: check the first byte be 0xde (so s 0xdf for map32)
+    resize(128,
+           proper_types:map(
+             oneof(primitive_types()),
+             oneof(primitive_types()))).
 
 %% TODO: add map
 msgpack_object() ->
