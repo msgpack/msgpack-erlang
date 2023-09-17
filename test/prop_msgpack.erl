@@ -59,7 +59,7 @@ prop_float() ->
     ?FORALL(
        Float,
        proper_types:float(),
-       pack_and_unpack(Float)).
+       pack_and_unpack(Float, [])).
 
 prop_primitive() ->
     ?FORALL(
