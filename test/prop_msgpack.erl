@@ -22,12 +22,17 @@ prop_binary() ->
        oneof([fix_raw(), raw16(), raw32()]),
        pack_and_unpack(Binary)).
 
+prop_float() ->
+    ?FORALL(
+       Float,
+       proper_types:float(),
+       pack_and_unpack(Float)).
+
 prop_primitive() ->
     ?FORALL(
        PrimObj,
        oneof(primitive_types()),
        pack_and_unpack(PrimObj)).
-
 
 
 %%% Helpers %%%
