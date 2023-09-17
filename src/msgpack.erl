@@ -46,6 +46,7 @@
 -include("msgpack.hrl").
 
 -export_type([object/0, msgpack_map/0, options/0, ext_packer/0, ext_unpacker/0]).
+-export_type([msgpack_map_jiffy/0, msgpack_map_jsx/0]).
 -type object() :: msgpack_term().
 
 -type options() ::
