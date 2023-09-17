@@ -78,6 +78,18 @@ prop_msgpack() ->
             {msgpack_object(), stable_opts()},
             pack_and_unpack(Obj, Opts)).
 
+prop_string() ->
+    ?FORALL({Str, Opts},
+            {utf8(),
+             oneof(
+               [
+                [],
+                [{unpack_str, as_list},{pack_str, from_list},{validate_string,true}],
+                [{unpack_str, as_binary},{pack_str, from_binary},{validate_string,true}],
+                [{unpack_str, as_tagged_list},{pack_str, from_tagged_list},{validate_string,true}]
+               ])},
+            pack_and_unpack(unicode:characters_to_list(Str), Opts)).
+
 
 %%% Helpers %%%
 pack_and_unpack(Obj, Opts) ->
