@@ -17,6 +17,8 @@
 -include_lib("proper/include/proper.hrl").
 -include("msgpack.hrl").
 
+%% Generator
+-export([msgpack_object/0]).
 
 %% -define(NUMTESTS, 16).
 %% -define(QC_OUT(P),
@@ -70,7 +72,9 @@ prop_primitive() ->
 prop_array_primitive() ->
     ?FORALL(
        {Array, Opts},
-       {oneof([fix_array_primitive(), array16_primitive()]), stable_opts()},
+       ?SIZED(Depth,
+              {oneof([fix_array_primitive(Depth), array16_primitive(Depth)]), stable_opts()}
+             ),
        pack_and_unpack(Array, Opts)).
 
 prop_map_primitive() ->
@@ -149,29 +153,45 @@ primitive_types() ->
     ].
 
 
-container_types() ->
-    [ fix_array_primitive(), array16_primitive(),
-      fix_map_primitive(), map16_primitive() ].
+container_types(Depth) ->
+    [
+     ?LAZY(fix_array_primitive(Depth)),
+     ?LAZY(array16_primitive(Depth)),
+     ?LAZY(fix_map_primitive(Depth)),
+     ?LAZY(map16_primitive(Depth))
+    ].
 
-fix_array_primitive() ->
+fix_array_primitive(Depth) when Depth > 1 ->
     %% up to 2^4-1
     %% TODO: check the first 4 bits be 1001
-    resize(15, proper_types:list(oneof(primitive_types()))).
+    resize(15, proper_types:list(?LAZY(msgpack_object_depth(floor(Depth / 2)))));
+fix_array_primitive(_) ->
+    resize(15, proper_types:list(primitive_types())).
 
-array16_primitive() ->
+
+array16_primitive(Depth) when Depth > 1 ->
     %% Up to 2^16-1, but for performance
     %% TODO: check the first byte be 0xdc (so s 0xdd for array32)
-    resize(128, proper_types:list(oneof(primitive_types()))).
+    resize(128, proper_types:list(?LAZY(msgpack_object_depth(floor(Depth / 2)))));
+array16_primitive(_) ->
+    resize(128, proper_types:list(primitive_types())).
 
-fix_map_primitive() ->
+
+fix_map_primitive(Depth) when Depth > 1 ->
+    NewDepth = floor(Depth/2),
     %% up to 2^4-1
     %% TODO: check the first 4 bits be 1000
+    resize(15,
+           proper_types:map(
+             ?LAZY(msgpack_object_depth(NewDepth)),
+             ?LAZY(msgpack_object_depth(NewDepth))));
+fix_map_primitive(_) ->
     resize(15,
            proper_types:map(
              oneof(primitive_types()),
              oneof(primitive_types()))).
 
-map16_primitive() ->
+map16_primitive(_) ->
     %% Up to 2^16-1, but for performance
     %% TODO: check the first byte be 0xde (so s 0xdf for map32)
     resize(128,
@@ -181,4 +201,7 @@ map16_primitive() ->
 
 %% TODO: add map
 msgpack_object() ->
-    oneof(container_types() ++ primitive_types()).
+    ?SIZED(Depth, oneof(primitive_types() ++ container_types(Depth))).
+
+msgpack_object_depth(Depth) ->
+    oneof(primitive_types() ++ container_types(Depth)).
